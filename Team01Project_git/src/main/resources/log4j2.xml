@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration xmlns="https://logging.apache.org/xml/ns"
+               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xsi:schemaLocation="
+                   https://logging.apache.org/xml/ns
+                   https://logging.apache.org/xml/ns/log4j-config-2.xsd">
+ <!-- 
+ 	appender : 메시지를 기록할 매체 (console, file ,DB)
+ 	layout : 메시지 기록 형식 (pattren)
+ 	logger : 메시지 기록자 
+ 	level : 로깅 메시지의 이벤트 등급 메시지의 기록 여부를 제어할 때 사용 됨
+ 	logger에 설정된 이벤트 등급에 비해 메시지의 이벤트 등급이 낮게 설정된 경우 , 메시지는 기록되지 않음
+ 		TRACE
+ 		DEBUG
+ 		INFO
+ 		WARN
+ 		ERROR
+ 		FATAL
+ 
+  -->
+  <Appenders>
+    <Console name="CONSOLE"> 
+      <PatternLayout pattern="%p - %c %n --> %m%n"/>
+    </Console>
+  </Appenders>
+  <Loggers>
+    <Root level="ERROR"> 
+      <AppenderRef ref="CONSOLE" />
+    </Root>
+    <Logger name="kr.or.ddit.yguniv" level="DEBUG" />
+    <Logger name="jdbc.sqltiming" level="DEBUG" />
+    <Logger name="jdbc.resultsettable" level="DEBUG" />
+    <Logger name="org.springframework" level="INFO" />
+    <Logger name="org.springframework.web" level="INFO" />
+    <Logger name="org.springframework.messaging" level="TRACE" />
+    <Logger name="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping" level="TRACE" />
+  </Loggers>
+</Configuration>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

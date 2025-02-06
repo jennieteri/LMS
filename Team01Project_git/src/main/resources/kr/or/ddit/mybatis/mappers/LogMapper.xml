@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.yguniv.log.dao.LogMapper">
+	<select id="selectintroduceList" resultType="LogVO">
+	
+	
+	</select>
+	<select id="getPersonLog" resultType="LogVO">
+    SELECT B.*
+    FROM (
+        SELECT 
+            ROWNUM AS RNUM,
+            A.log_date,
+            A.log_time,
+            A.log_cont_nm,
+            A.log_method,
+            A.log_count
+        FROM (
+            SELECT 
+                log_date,
+                log_time,
+                log_cont_nm,
+                log_method,
+                log_count
+            FROM person_log
+            WHERE id = #{id}
+            <where>
+                <if test='paging.simpleCondition.searchWord neq null'>
+                    <choose>
+                        <when test='paging.simpleCondition.searchType eq "date"'>
+                            INSTR(log_date, #{paging.simpleCondition.searchWord}) > 0
+                        </when>
+                        <when test='paging.simpleCondition.searchType eq "content"'>
+                            INSTR(log_cont_nm, #{paging.simpleCondition.searchWord}) > 0
+                        </when>
+                        <when test='paging.simpleCondition.searchType eq "method"'>
+                            INSTR(log_method, #{paging.simpleCondition.searchWord}) > 0
+                        </when>
+                        <otherwise>
+                            INSTR(log_date, #{paging.simpleCondition.searchWord}) > 0
+                            OR INSTR(log_cont_nm, #{paging.simpleCondition.searchWord}) > 0
+                            OR INSTR(log_method, #{paging.simpleCondition.searchWord}) > 0
+                        </otherwise>
+                    </choose>
+                </if>
+            </where>
+            ORDER BY log_date DESC, log_time DESC
+        ) A
+    ) B
+    <![CDATA[
+    WHERE RNUM >= #{paging.startRow} AND RNUM <= #{paging.endRow}
+    ]]>
+		
+	</select>
+	
+	
+	
+	<update id="mergeIntoLog" parameterType="LogVO">
+	
+MERGE INTO PERSON_LOG t
+USING (
+    SELECT 
+        #{id} AS id,
+        TO_CHAR(SYSDATE, 'YYYYMMDD') AS log_date,
+        TO_CHAR(SYSDATE, 'HH24') AS log_time,
+        #{logContNm} AS log_cont_nm,
+        #{logMethod} AS log_method
+    FROM DUAL
+) s
+ON (
+    t.id = s.id 
+    AND t.log_date = s.log_date
+    AND t.log_time = s.log_time
+    AND t.log_cont_nm = s.log_cont_nm 
+    AND t.log_method = s.log_method
+)
+WHEN MATCHED THEN
+    UPDATE SET 
+        t.log_count = t.log_count + 1
+WHEN NOT MATCHED THEN
+    INSERT ( id, log_date, log_time, log_cont_nm, log_method, log_count)
+    VALUES (
+        s.id,
+        s.log_date,
+        s.log_time,
+        s.log_cont_nm,
+        s.log_method,
+        1
+    )
+	</update>
+	
+<select id="getLogDayList" resultType="LogVO">
+
+/*일주일 기간 log*/    
+SELECT
+    log_date, 
+    SUM(log_count) AS log_count
+FROM
+    person_log
+WHERE
+ log_date BETWEEN TO_CHAR(SYSDATE - 7, 'YYYYMMDD') AND TO_CHAR(SYSDATE, 'YYYYMMDD')
+GROUP BY
+    log_date
+ORDER BY
+    log_date
+    
+
+</select>	
+<select id="getTotalLogCount" resultType="int">
+SELECT
+    SUM(log_count) AS total_users
+FROM
+    person_log
+</select>	
+
+<select id="getTraficLogList" resultType="LogVO">
+--날짜별 컨트롤러 요청 모음
+select
+    log_cont_nm
+    , log_date
+    , count(log_cont_nm) as log_count
+from 
+    person_log
+where
+    log_date=#{logDate}
+GROUP by 
+    log_cont_nm
+    , log_date
+order by 
+    log_date
+    , log_cont_nm ASC  -- 컨트롤러 이름 순 정렬
+
+</select>
+
+<select id="getTraficMethodLogList" resultType="LogVO">
+	select
+ 
+    log_method
+    , count(log_cont_nm) as log_count
+from 
+    person_log
+where
+    log_date=#{logDate}
+GROUP by 
+   log_method
+   order by 
+    log_method asc
+</select>	
+	
+	
+	
+	
+	<delete id="deleteintroduce"></delete>
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="kr.or.ddit.yguniv.projectduty.dao.ProjectDutyMapper">
+	<sql id="columns">
+	DUTY_NO			/*일감번호*/
+	, DUTY_ID		/*담당자*/
+	, DUTY_CN		/*일감내용*/
+	, DUTY_PRGS_RTPRGS	/*일감진척도*/
+	, DUTY_TITLE		/*일감제목*/
+	, DUTY_DATE		/*수정일시*/
+	, DUTY_TEAM /*팀번호*/
+	</sql>
+	
+	<!-- 검색 조건 -->
+	<sql id="searchFrag">
+		
+	</sql>
+	
+	<resultMap type="ProjectDutyVO" id="ProjectDutyMap" autoMapping="true">
+	<id column="DUTY_NO" property="dutyNo" />
+	<result column="DUTY_ID" property="dutyId"/>
+	<association property="projectMember" column="DUTY_ID" 
+				select="kr.or.ddit.yguniv.projectMember.dao.ProjectMemberMapper.selectProjectMember"/>
+	</resultMap>
+	
+	
+	<select id="selectProjectDuty" resultMap="ProjectDutyMap">
+	SELECT 
+			A.DUTY_NO			/*일감번호*/
+			, A.DUTY_ID		/*담당자*/
+			, A.DUTY_CN		/*일감내용*/
+			, A.DUTY_PRGS_RTPRGS	/*일감진척도*/
+			, A.DUTY_TITLE		/*일감제목*/
+			, A.DUTY_DATE		/*수정일시*/
+			, A.DUTY_TEAM /*팀번호*/
+			, B.STU_ID AS STU_ID
+	        , B.LECT_NO
+			, B.LEAD_YN
+			, B.PEER_SCORE 
+	FROM
+			DUTY A
+	INNER JOIN
+			PROJECT_MEMBER B
+	ON
+			A.DUTY_ID = B.STU_ID
+	
+	WHERE
+			A.DUTY_NO = #{dutyNo, jdbcType=VARCHAR}
+	
+	</select>
+	
+	<select id="selectProjectDutylist" resultMap="ProjectDutyMap">
+		SELECT
+				C.*
+		FROM
+		(
+		SELECT B.*
+				,ROWNUM RNUM
+		FROM	
+			(
+			SELECT ROWNUM TEMP_RNUM
+					, A.*
+			FROM
+				(
+				SELECT 
+				       A.DUTY_NO
+				       , A.DUTY_TEAM
+				       , A.DUTY_ID
+				       , A.DUTY_CN
+				       , A.DUTY_PRGS_RTPRGS
+				       , A.DUTY_TITLE
+				       , A.DUTY_DATE
+				       , B.STU_ID AS STU_ID
+				       , B.LECT_NO
+						, B.LEAD_YN
+						, B.PEER_SCORE 
+				FROM
+				        DUTY A
+				INNER JOIN
+				        PROJECT_MEMBER B
+				ON
+				        A.DUTY_ID = B.STU_ID
+			    WHERE
+			    		A.DUTY_TEAM = #{dutyTeam, jdbcType=VARCHAR}
+				<where>
+					<if
+						test='paging.simpleCondition.searchWord neq null'>
+						<choose>
+							<when
+								test='paging.simpleCondition.searchType eq "title"'>
+								INSTR(DUTY_TITLE, #{paging.simpleCondition.searchWord}) > 0
+							</when>
+							<when
+								test='paging.simpleCondition.searchType eq "writer"'>
+								INSTR(DUTY_ID, #{paging.simpleCondition.searchWord}) > 0
+							</when>
+							<when
+								test='paging.simpleCondition.searchType eq "content"'>
+								INSTR(DUTY_CN, #{paging.simpleCondition.searchWord}) > 0
+							</when>
+							<otherwise>
+								INSTR(DUTY_TITLE, #{paging.simpleCondition.searchType}) > 0 
+								OR INSTR(DUTY_ID, #{paging.simpleCondition.searchWord}) > 0 
+								OR INSTR(DUTY_CN, #{paging.simpleCondition.searchWord}) > 0
+							</otherwise>
+						</choose>
+					</if>
+				</where>
+				
+				ORDER BY A.DUTY_NO DESC	
+				
+				)A
+				ORDER BY TEMP_RNUM DESC
+			)B
+		)C	
+		<![CDATA[ 
+		WHERE TEMP_RNUM >= #{paging.startRow} AND TEMP_RNUM <= #{paging.endRow}
+		]]>
+		ORDER BY RNUM DESC
+	</select>
+	
+	<select id="selectTotalRecord" resultType="int">
+		SELECT COUNT(DUTY_NO)
+		FROM DUTY
+		<include refid="searchFrag" />
+	</select>
+	
+	<insert id="insertProjectDuty">
+		<selectKey order="BEFORE" resultType="String" keyProperty="dutyNo">
+		SELECT SEQ_DUTY.NEXTVAL FROM DUAL
+		</selectKey>
+		INSERT INTO DUTY(
+			DUTY_NO			/*일감번호*/
+			, DUTY_ID		/*담당자*/
+			, DUTY_CN		/*일감내용*/
+			, DUTY_PRGS_RTPRGS	/*일감진척도*/
+			, DUTY_TITLE		/*일감제목*/
+			, DUTY_DATE		/*수정일시*/
+			, DUTY_TEAM /*팀번호*/
+		)VALUES(
+			 #{dutyNo,jdbcType=VARCHAR}
+			, #{dutyId,jdbcType=VARCHAR}
+			, #{dutyCn,jdbcType=VARCHAR}
+			, #{dutyPrgsRtprgs,jdbcType=NUMERIC}
+			, #{dutyTitle,jdbcType=VARCHAR}
+			, TO_CHAR(SYSDATE, 'YYYY-MM-DD-HH24:MI')
+			, #{dutyTeam,jdbcType=VARCHAR}
+		)
+		
+		
+	</insert>	
+	
+	<update id="updateProjectDuty">
+		UPDATE DUTY
+		SET
+			DUTY_ID = #{dutyId,jdbcType=VARCHAR}
+			,DUTY_CN = #{dutyCn,jdbcType=VARCHAR}
+			,DUTY_PRGS_RTPRGS = #{dutyPrgsRtprgs,jdbcType=NUMERIC}
+			,DUTY_TITLE = #{dutyTitle,jdbcType=VARCHAR}
+			,DUTY_DATE = TO_CHAR(SYSDATE, 'YYYY-MM-DD-HH24:MI')
+		WHERE
+			DUTY_NO = #{dutyNo,jdbcType=VARCHAR}
+	</update>
+	
+	<delete id="deleteProjectDuty">
+		DELETE 
+		FROM 
+				DUTY
+		WHERE 
+				DUTY_NO = #{dutyNo,jdbcType=VARCHAR}
+	</delete>
+	
+	<select id="selectProjectDutylistNonPaging" resultMap="ProjectDutyMap">
+		SELECT 
+				DUTY_NO			/*일감번호*/
+				,DUTY_ID		/*담당자*/
+				,DUTY_CN		/*일감내용*/
+				,DUTY_PRGS_RTPRGS	/*일감진척도*/
+				,DUTY_TITLE		/*일감제목*/
+				,DUTY_DATE		/*수정일시*/
+				,DUTY_TEAM /*팀번호*/
+		FROM
+				DUTY
+		
+		WHERE
+				DUTY_TEAM = #{dutyTeam, jdbcType=VARCHAR}
+	
+	</select>
+	
+	
+	
+	
+	
+</mapper>

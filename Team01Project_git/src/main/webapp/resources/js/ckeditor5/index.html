@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>CKEditor 5 - Quick start ZIP</title>
+		<link rel="stylesheet" href="./ckeditor5.css">
+		<style>
+			.main-container {
+				width: 795px;
+				margin-left: auto;
+				margin-right: auto;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="main-container">
+			<div >
+				<textarea id="editor">내용을 입력하세요</textarea>
+			</div>
+			<button id="getDataBtn">전송</button>
+		</div>
+		<script type="importmap">
+			{
+				"imports": {
+					"ckeditor5": "./ckeditor5.js",
+					"ckeditor5/": "./ko.js/"
+				}
+			}
+		</script>
+		<script type="module">
+			let editorInstance;
+			import {
+				ClassicEditor,
+				Autoformat,
+				Bold,
+				Italic,
+				Underline,
+				BlockQuote,
+				Base64UploadAdapter,
+				CloudServices,
+				Essentials,
+				Heading,
+				Image,
+				ImageCaption,
+				ImageResize,
+				ImageStyle,
+				ImageToolbar,
+				ImageUpload,
+				PictureEditing,
+				Indent,
+				IndentBlock,
+				Link,
+				List,
+				MediaEmbed,
+				Mention,
+				Paragraph,
+				PasteFromOffice,
+				Table,
+				TableColumnResize,
+				TableToolbar,
+				TextTransformation
+			} from 'ckeditor5';
+
+            ClassicEditor
+                .create( document.querySelector( '#editor' ), {
+                    licenseKey: 'GPL', // Or <YOUR_LICENSE_KEY>
+                    plugins: [ 
+					Autoformat,
+					BlockQuote,
+					Bold,
+					CloudServices,
+					Essentials,
+					Heading,
+					Image,
+					ImageCaption,
+					ImageResize,
+					ImageStyle,
+					ImageToolbar,
+					ImageUpload,
+					Base64UploadAdapter,
+					Indent,
+					IndentBlock,
+					Italic,
+					Link,
+					List,
+					MediaEmbed,
+					Mention,
+					Paragraph,
+					PasteFromOffice,
+					PictureEditing,
+					Table,
+					TableColumnResize,
+					TableToolbar,
+					TextTransformation,
+					Underline
+
+					],
+                    toolbar: [
+						'undo',
+						'redo',
+						'|',
+						'heading',
+						'|',
+						'bold',
+						'italic',
+						'underline',
+						'|',
+						'link',
+						'uploadImage',
+						'ckbox',
+						'insertTable',
+						'blockQuote',
+						'mediaEmbed',
+						'|',
+						'bulletedList',
+						'numberedList',
+						'|',
+						'outdent',
+						'indent'
+					],
+					licenseKey: 'GPL'
+					,language: 'ko' // 한국어 설정
+				} )
+				.then( editor => {
+					editorInstance = editor;
+				} )
+				.catch( error => {
+					console.error( error );
+				} );
+
+				document.getElementById('getDataBtn').addEventListener('click', () => {
+					if (editorInstance) {
+						const data = editorInstance.getData(); // 에디터 데이터 가져오기
+						console.log(data); // HTML 데이터 출력
+						alert(data);       // 사용자에게 보여주기
+					} else {
+						alert('Editor not initialized.');
+					}
+				});
+		</script>
+		<!-- A friendly reminder to run on a server, remove this during the integration. -->
+		<script>
+				window.onload = function() {
+					if ( window.location.protocol === "file:" ) {
+						alert( "This sample requires an HTTP server. Please serve this file with a web server." );
+					}
+				};
+				
+
+
+		</script>
+	</body>
+</html>
+

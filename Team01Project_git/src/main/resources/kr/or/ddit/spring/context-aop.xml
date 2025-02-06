@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.3.xsd">
+
+
+<!-- 트랜잭션 xml파일의 id에 해당하는걸 주입받음 -->
+	<tx:annotation-driven transaction-manager="transactionManager"/>
+
+<!-- 트랜잭션 관리 끝 -->
+	<aop:aspectj-autoproxy></aop:aspectj-autoproxy>
+
+<!-- Advice빈 등록 -->
+	<bean class="kr.or.ddit.yguniv.advice.LoggingAdvice" id="loggingAdvice"></bean>
+	
+	<tx:advice id="txAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+<!-- 			<tx:method name="read*" read-only="true"/> -->
+<!-- 			<tx:method name="create*" propagation="REQUIRED"/> -->
+<!-- 			<tx:method name="modify*" propagation="REQUIRED"/> -->
+<!-- 			<tx:method name="remove*" propagation="REQUIRED"/> -->
+			<tx:method name="*" propagation="REQUIRED" rollback-for="java.lang.RuntimeException"/>
+		</tx:attributes>
+	</tx:advice>
+
+<!-- AOP에 대한 설정  --> 
+<!-- kr.or.ddit.prod.service -->
+	<aop:config>
+		<aop:pointcut expression="execution(* kr.or.ddit..service.*.*(..))" id="pointcut"/>
+		
+		<aop:advisor advice-ref="txAdvice" pointcut-ref="pointcut"/>
+		
+		<aop:aspect ref="loggingAdvice" >
+			<aop:around method="around" pointcut-ref="pointcut"/>
+		</aop:aspect>
+		
+<!-- 		<aop:aspect ref="controller"> -->
+<!-- 			<aop:before method="test" pointcut-ref="pointcut"/> -->
+<!-- 		</aop:aspect> -->
+		
+	</aop:config>
+	
+
+</beans>

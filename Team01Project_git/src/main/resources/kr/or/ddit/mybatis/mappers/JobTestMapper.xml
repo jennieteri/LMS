@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.yguniv.jobtest.dao.JobTestMapper">
+
+<resultMap id="JobTestMap" type="kr.or.ddit.yguniv.vo.JobTestVO">
+    <id property="jobTestNo" column="JOB_TEST_NO"/>
+    <result property="rnum" column="RNUM"/>
+    <result property="jobTestText" column="JOB_TEST_TEXT"/>
+    <result property="jobTestType" column="JOB_TEST_TYPE"/>
+	<association property="commoncode" javaType="kr.or.ddit.yguniv.vo.CommonCodeVO">
+    	<result property="cocoCd" column="COCO_CD"/>
+    	<result property="parCocoCd" column="PAR_COCO_CD"/>
+    	<result property="cocoStts" column="COCO_STTS"/>
+  	</association>
+</resultMap>
+
+	<insert id="insertjobTest" parameterType="JobTestVO">
+	    <selectKey order="BEFORE" resultType="String" keyProperty="jobTestNo">
+	        SELECT SEQ_JOBTEST.NEXTVAL FROM DUAL
+	    </selectKey>
+	
+	    INSERT INTO JOB_TEST(
+	          JOB_TEST_NO
+	        , JOB_TEST_TYPE
+	        , JOB_TEST_TEXT
+	    )VALUES(
+	          #{jobTestNo, jdbcType=VARCHAR}
+	        , #{jobTestType, jdbcType=VARCHAR}
+	        , #{jobTestText, jdbcType=VARCHAR}
+	    )
+	</insert>
+
+<!-- 직업선호도검사 문제 삭제 -->
+	<delete id="deletejobTest">
+		DELETE FROM JOB_TEST
+		WHERE JOB_TEST_NO = #{jobTestNo}
+	</delete>
+	
+	
+	<select id="selectJobTestListByNo" resultMap="JobTestMap">
+        SELECT
+          J.JOB_TEST_NO,
+          J.JOB_TEST_TYPE,
+          J.JOB_TEST_TEXT,
+          C.COCO_CD,
+          C.PAR_COCO_CD,
+          C.COCO_STTS
+      FROM
+          JOB_TEST J
+    
+      INNER JOIN
+          COMMON_CODE C
+      ON
+          J.JOB_TEST_TYPE = C.COCO_CD
+            WHERE JOB_TEST_NO= #{jobTestNo, jdbcType=VARCHAR}
+      ORDER BY
+          TO_NUMBER(JOB_TEST_NO) ASC
+
+		
+	</select>
+	
+	
+<!-- 	학생 직업선호도평가 문제 조회 페이징 없음 -->
+	 <select id="selectjobTestList" resultMap="JobTestMap">
+	SELECT A.*, ROWNUM AS RNUM
+		FROM (
+		    SELECT 
+		        J.JOB_TEST_NO,
+		        J.JOB_TEST_TYPE,
+		        J.JOB_TEST_TEXT,
+		        C.COCO_CD,
+		        C.PAR_COCO_CD,
+		        C.COCO_STTS
+		    FROM JOB_TEST J
+		    INNER JOIN COMMON_CODE C
+		    ON J.JOB_TEST_TYPE = C.COCO_CD
+		    ORDER BY TO_NUMBER(J.JOB_TEST_NO) ASC
+		) A
+
+    </select>
+    
+	
+	<select id="getJobTestByNo" resultType="JobTestVO">
+		SELECT JOB_TEST_TYPE
+			FROM JOB_TEST
+	</select>
+	
+	
+
+	<!-- 직업선호도검사결과 insert -->
+	<insert id="insertJobTestResult" parameterType="JobTestResultVO">
+		INSERT INTO JOB_TEST_RESULT (
+			     STU_ID
+			    ,JTR_REA
+			    ,JTR_INQ
+			    ,JTR_ART
+			    ,JTR_SOC
+			    ,JTR_ENT
+			    ,JTR_CON
+			    ,JTR_DT
+			) VALUES (
+			   	  #{stuId, jdbcType=VARCHAR}
+				, #{jtrRea, jdbcType=NUMERIC}
+				, #{jtrInq, jdbcType=NUMERIC}
+				, #{jtrArt, jdbcType=NUMERIC}
+				, #{jtrSoc, jdbcType=NUMERIC}
+				, #{jtrEnt, jdbcType=NUMERIC}
+				, #{jtrCon, jdbcType=NUMERIC}
+				, SYSDATE
+			)
+	</insert>
+	
+	<!-- 업데이트 -->
+	<update id="updateJobTestResult" parameterType="JobTestResultVO">
+	   	DELETE FROM JOB_TEST_RESULT
+			WHERE
+	        STU_ID = #{stuId, jdbcType=VARCHAR}
+	</update>
+	
+<!-- 	직업선호도검사 문제 업데이트 -->
+	<update id="updateJobTest">
+		UPDATE JOB_TEST
+				SET 
+				     JOB_TEST_TYPE = #{jobTestType, jdbcType=VARCHAR}
+				    ,JOB_TEST_TEXT = #{jobTestText, jdbcType=VARCHAR}
+				WHERE JOB_TEST_NO = #{jobTestNo, jdbcType=VARCHAR}
+	</update>
+	
+	<select id="checkTestToday" parameterType="string" resultType="int">
+	    SELECT COUNT(*)
+	    FROM JOB_TEST_RESULT
+	    WHERE STU_ID = #{stuId, jdbcType=VARCHAR}
+	      AND TRUNC(JTR_DT) = TRUNC(SYSDATE)
+	</select>
+	
+
+		
+	
+</mapper>

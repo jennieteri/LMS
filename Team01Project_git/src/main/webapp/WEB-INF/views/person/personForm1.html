@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+<style>
+    #cjFam {
+        border:1px solid pink;
+        margin-bottom: 10px;
+    }
+</style>
+</head>
+<body>
+<button onclick="sendFams()">떤송</button><br>
+<button onclick="addFam()">가족등록</button>
+<div id="famList"></div>
+<div id="cjFam" style="display:none" >
+    <button onclick="revFam(this)">삭제</button>
+    <select id="cjRel">
+        <option value="0">관계</option>
+        <option value="1">부</option>
+        <option value="2">모</option>
+        <option value="3">형제</option>
+    </select><br>
+    이름: <input type="text" id="cjName"><br>
+    나이: <input type="text" id="cjAge"><br>
+</div>
+<script>
+  // 추가된 것 JSON 형태로 맹글기
+  function sendFams(){
+      let fams = famList.querySelectorAll("#cjFam");
+      let famsArr = []; // 가족 객체 담을 빈 배열
+      
+      for(let i=0; i<fams.length; i++){
+          fam = fams[i];
+          let famOne = {
+              rel: fam.querySelector("#cjRel").value,
+              name:fam.querySelector("#cjName").value,
+              age:fam.querySelector("#cjAge").value -0
+          }
+          famsArr.push(famOne);
+      }
+     
+      console.log("체킁:",famsArr);
+  }  
+  
+  function revFam(pBtn){
+    pBtn.closest("#cjFam").remove();
+  }
+
+  const famList = document.querySelector("#famList");
+  const cjFam = document.querySelector("#cjFam"); //프로토타입(원본 틀, 템플릿)으로 쓸꺼임!
+  // script로 html문자열 더하기를 많이 하는데,
+  // 상황에 따라선 html템플릿 패턴을 사용하는 것이 훨씬 유리!
+  // html 문자열 더하기만 난무하는 건 관리나 재활용 측면에서 그리 좋지 않으니
+  // html템플릿 패턴도 생각해서 자주 써보도록 합시당. (프로그램 실력이 잘 늘어남)
+  function addFam(){
+      let famOne = cjFam.cloneNode(true);  // 요렇게만 쓰면 껍데기만 복사
+      famOne.style.display="block";  // 복사한 거 눈에 보이겡
+      famList.appendChild(famOne);   // 추강
+  }  
+</script>    
+</body>
+</html>

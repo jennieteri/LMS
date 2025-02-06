@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.yguniv.attendee.dao.AttendeeMapper">
+<sql id="columns">
+	FT_TEST_SCORE		/*기말고사점수*/
+	,ETC_SCORE			/*기타점수*/
+	,LECT_NO			/*강의번호*/
+	,STU_ID				/*학번*/
+	,ATTEN_ATND_SCORE	/*출석점수*/
+	,ASSIG_SCORE		/*과제종합점수*/
+	,PR_TEST_SCORE		/*중간고사점수*/
+	,ATTEN_SCORE		/*성적*/
+	,ATTEN_COEVA		/*강의평가*/
+</sql>
+
+<resultMap type="AttendeeVO" id="AttendeeForProjectMap">
+<id property="lectNo" column="LECT_NO"/>
+<id property="stuId" column="STU_ID"/>
+<association property="studentVO" autoMapping="true" />
+<association property="personVO" autoMapping="true" />
+
+</resultMap>
+
+
+
+<select id="selectAttendeeList" resultType="AttendeeVO">
+	SELECT 
+			FT_TEST_SCORE		/*기말고사점수*/
+			,ETC_SCORE			/*기타점수*/
+			,LECT_NO			/*강의번호*/
+			,STU_ID				/*학번*/
+			,ATTEN_ATND_SCORE	/*출석점수*/
+			,ASSIG_SCORE		/*과제종합점수*/
+			,PR_TEST_SCORE		/*중간고사점수*/
+			,ATTEN_SCORE		/*성적*/
+			,ATTEN_COEVA		/*강의평가*/
+			
+	FROM	ATTENDEE
+</select>
+
+<select id="selectAttendeeListWithLecture" resultType="AttendeeVO">
+	SELECT
+			FT_TEST_SCORE		/*기말고사점수*/
+			,ETC_SCORE			/*기타점수*/
+			,LECT_NO			/*강의번호*/
+			,STU_ID				/*학번*/
+			,ATTEN_ATND_SCORE	/*출석점수*/
+			,ASSIG_SCORE		/*과제종합점수*/
+			,PR_TEST_SCORE		/*중간고사점수*/
+			,ATTEN_SCORE		/*성적*/
+			,ATTEN_COEVA		/*강의평가*/
+	FROM ATTENDEE
+	WHERE LECT_NO = #{lectNo}
+</select>
+
+<select id="selectAttendee" resultType="AttendeeVO">
+	SELECT
+			FT_TEST_SCORE		/*기말고사점수*/
+			,ETC_SCORE			/*기타점수*/
+			,LECT_NO			/*강의번호*/
+			,STU_ID				/*학번*/
+			,ATTEN_ATND_SCORE	/*출석점수*/
+			,ASSIG_SCORE		/*과제종합점수*/
+			,PR_TEST_SCORE		/*중간고사점수*/
+			,ATTEN_SCORE		/*성적*/
+			,ATTEN_COEVA		/*강의평가*/
+			
+	FROM ATTENDEE
+	WHERE
+		LECT_NO = #{lectNo}
+	AND STU_ID = #{stuId}
+</select>
+
+<select id="countAttendee" resultType="int">
+	SELECT COUNT(*)
+	FROM
+		ATTENDEE
+	WHERE LECT_NO = #{lectNo}
+</select>
+
+<select id="selectAttendeeForProject" resultMap="AttendeeForProjectMap">
+	SELECT 
+			A.FT_TEST_SCORE		/*기말고사점수*/
+			, A.ETC_SCORE			/*기타점수*/
+			, A.LECT_NO			/*강의번호*/
+			, A.STU_ID				/*학번*/
+			, A.ATTEN_ATND_SCORE	/*출석점수*/
+			, A.ASSIG_SCORE		/*과제종합점수*/
+			, A.PR_TEST_SCORE		/*중간고사점수*/
+			, A.ATTEN_SCORE		/*성적*/
+			, A.ATTEN_COEVA		/*강의평가*/
+			,B.NM
+	FROM 
+				ATTENDEE A
+    INNER JOIN 
+    			PERSON B
+    ON 
+    			A.STU_ID = B.ID
+    WHERE 
+    			A.LECT_NO = #{lectNo}
+</select>
+
+<select id="selectAttendeeForProjectNoTeam" resultMap="AttendeeForProjectMap">
+
+	SELECT 
+			   A.FT_TEST_SCORE		/*기말고사점수*/
+				, A.ETC_SCORE			/*기타점수*/
+				, A.LECT_NO			/*강의번호*/
+				, A.STU_ID				/*학번*/
+				, A.ATTEN_ATND_SCORE	/*출석점수*/
+				, A.ASSIG_SCORE		/*과제종합점수*/
+				, A.PR_TEST_SCORE		/*중간고사점수*/
+				, A.ATTEN_SCORE		/*성적*/
+				, A.ATTEN_COEVA		/*강의평가*/
+			   , B.NM AS NM
+	FROM 
+	   			 ATTENDEE A
+	INNER JOIN 
+	    			PERSON B
+	ON 
+	    	A.STU_ID = B.ID
+	WHERE 
+	    	A.LECT_NO = #{lectNo,jdbcType=VARCHAR}
+	AND 
+	    NOT EXISTS (
+	        SELECT 1
+	        FROM PROJECT_MEMBER PM
+	        WHERE PM.STU_ID = A.STU_ID
+	        AND PM.LECT_NO = A.LECT_NO
+	        AND PM.TASK_NO = #{taskNo,jdbcType=VARCHAR}
+	    )
+
+</select>
+
+
+
+</mapper>

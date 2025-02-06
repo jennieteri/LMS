@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="kr.or.ddit.yguniv.projectMember.dao.ProjectMemberMapper">
+<sql id="columns">
+	LECT_NO		/*강의번호*/
+	STU_ID		/*학번*/
+	TEAM_CD		/*팀번호*/
+	TASK_NO 	/*과제번호*/
+	LEAD_YN		/*대표자여부*/
+	PEER_SCORE	/*상호평가점수*/
+	PEER_YN		/*상호평가완료여부*/
+</sql>	
+
+<resultMap type="ProjectMemberVO" id="projectMemberMap" autoMapping="true">
+	<id property="lectNo" column="LECT_NO"/>
+	<id property="stuId" column="STU_ID"/>
+	<result property="teamCd" column="TEAM_CD"/>
+	<result property="nm" column="NM"/>
+	<association property="attendee" autoMapping="true" />
+	<association property="projectTeam" autoMapping="true" />
+	<association property="studentVO" autoMapping="true" />
+</resultMap>
+
+
+
+<select id="selectProjectMember" resultMap="projectMemberMap">
+	SELECT
+		    A.FT_TEST_SCORE,
+		    A.ETC_SCORE,
+		    A.LECT_NO,
+		    A.STU_ID,
+		    A.ATTEN_ATND_SCORE,
+		    A.ASSIG_SCORE,
+		    A.PR_TEST_SCORE,
+		    A.ATTEN_SCORE,
+		    A.ATTEN_COEVA,
+		    B.LECT_NO,
+		    B.STU_ID,
+		    B.TASK_NO,
+		    B.TEAM_CD,
+		    B.LEAD_YN,
+		    B.PEER_SCORE,
+		    B.PEER_YN,
+		    P.NM, 
+            T.TEAM_STATUS,
+            T.TEAM_NM,
+            T.TEAM_PURPO,
+            T.TEAM_NOTES,
+            T.TEAM_EVYN,
+            T.TEAM_PROGE
+	FROM 
+			PROJECT_MEMBER B 
+	INNER JOIN 
+				ATTENDEE A
+		    ON 
+		    	B.STU_ID = A.STU_ID
+		    AND 
+		    	B.LECT_NO = A.LECT_NO
+   	INNER JOIN
+   				PERSON P
+ 			ON
+ 				B.STU_ID = P.ID
+ 	INNER JOIN
+                PROJECT_TEAM T
+            ON
+                B.TEAM_CD = T.TEAM_CD
+	WHERE 
+		B.STU_ID = #{stuId,jdbcType=VARCHAR} 
+ 				
+	
+</select>	
+
+<select id="selectProjectMemberList" resultMap="projectMemberMap">
+
+	SELECT 
+	        A.LECT_NO
+	       , A.STU_ID
+	       , A.TASK_NO
+	       , A.TEAM_CD
+	       , A.LEAD_YN
+	       , A.PEER_SCORE
+	       , A.PEER_YN
+	       , B.NM AS NM
+	FROM
+	        PROJECT_MEMBER A
+	INNER JOIN 
+			PERSON B
+	ON 
+		A.STU_ID = B.ID
+		
+	WHERE A.TEAM_CD = #{teamCd,jdbcType=VARCHAR}
+				
+</select>	
+
+<insert id="insertProjectMember">
+	INSERT INTO PROJECT_MEMBER(
+		LECT_NO		/*강의번호*/
+		,STU_ID		/*학번*/
+		,TEAM_CD	/*팀번호*/
+		,TASK_NO	/*과제번호*/
+		,LEAD_YN	/*대표자여부*/
+		,PEER_SCORE	/*상호평가점수*/
+	)VALUES(
+		 #{lectNo,jdbcType=VARCHAR}
+		, #{stuId,jdbcType=VARCHAR}
+		, #{teamCd,jdbcType=VARCHAR}
+		, #{taskNo,jdbcType=VARCHAR}
+		, #{leadYn,jdbcType=CHAR}
+		, #{peerScore,jdbcType=NUMERIC}
+	
+	)
+</insert>	
+	
+<update id="updateProjectMember">
+	UPDATE PROJECT_MEMBER
+	SET
+		TEAM_CD = 	#{teamCd,jdbcType=VARCHAR}
+		<if test="leadYn neq null">
+		,LEAD_YN =	#{leadYn,jdbcType=CHAR}
+		</if>
+		<if test="peerScore neq null">
+		,PEER_SCORE =	#{peerScore,jdbcType=NUMERIC}
+		</if>
+	WHERE
+		LECT_NO = #{lectNo,jdbcType=VARCHAR}
+	AND
+		TASK_NO = #{taskNo,jdbcType=VARCHAR}
+	AND
+		STU_ID = #{stuId,jdbcType=VARCHAR}
+		
+</update>	
+
+<delete id="deleteProjectMember">
+	DELETE 
+	FROM
+			PROJECT_MEMBER
+	WHERE 	
+		LECT_NO = #{lectNo,jdbcType=VARCHAR}
+	AND
+		TASK_NO = #{taskNo,jdbcType=VARCHAR}
+	AND
+		STU_ID = #{stuId,jdbcType=VARCHAR}
+</delete>
+
+<update id="updateLeadYn">
+	UPDATE PROJECT_MEMBER
+	SET
+		LEAD_YN = #{leadYn,jdbcType=CHAR}
+	WHERE
+		LECT_NO = #{lectNo,jdbcType=VARCHAR}
+	AND
+		TASK_NO = #{taskNo,jdbcType=VARCHAR}
+	AND
+		STU_ID = #{stuId,jdbcType=VARCHAR}
+</update>	
+
+<update id="updatePeerYn">
+	UPDATE PROJECT_MEMBER
+	SET
+		PEER_YN = 'Y'
+	WHERE
+		STU_ID = #{stuId,jdbcType=VARCHAR}
+</update>
+	
+</mapper>

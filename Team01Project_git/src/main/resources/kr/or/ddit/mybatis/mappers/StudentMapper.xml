@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.yguniv.student.dao.StudentMapper">
+	<select id="selectTotalRecord" resultType="int">
+		SELECT COUNT(*)
+		FROM STUDENT
+	</select>
+	<select id="selectPagingTotalRecord" resultType="int">
+		SELECT COUNT(*)
+		FROM STUDENT S
+		INNER JOIN PERSON P ON(S.STU_ID = P.ID)
+		<where>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.stuId)">
+				AND INSTR(S.STU_ID, #{detailCondition.stuId, jdbcType=VARCHAR}) > 0
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.nm)">
+				AND INSTR(P.NM, #{detailCondition.nm, jdbcType=VARCHAR}) > 0
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.gradeCd)">
+				AND S.GRADE_CD = #{detailCondition.gradeCd, jdbcType=VARCHAR}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.deptCd)">
+				AND S.DEPT_CD = #{detailCondition.deptCd, jdbcType=VARCHAR}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.streCateCd)">
+				AND S.STRE_CATE_CD = #{detailCondition.streCateCd, jdbcType=VARCHAR}
+			</if>
+		</where>
+	</select>
+	<resultMap type="StudentVO" id="studentList" autoMapping="true">
+		<association property="gradeCocoVO" javaType="CommonCodeVO">
+			<result property="cocoStts" column="GRADE_NM"/>
+		</association>
+		<association property="streCateCocoVO" javaType="CommonCodeVO">
+			<result property="cocoStts" column="STRE_CATE_NM"/>
+		</association>
+		<association property="departmentVO" javaType="DepartmentVO" autoMapping="true"/>
+		<association property="professor" javaType="ProfessorVO">
+			<result property="nm" column="PROFE_NM"/>
+		</association>
+	</resultMap>
+	<select id="studentList" resultMap="studentList">
+		SELECT B.*
+		FROM (
+			SELECT A.*, ROWNUM AS RNUM
+			FROM (
+				SELECT
+					S.STU_ID	/* 학번 */
+		            , P.NM	/* 학생명 */
+		            , S.GRADE_CD	/* 학년코드 */
+					, (SELECT FN_COCO_STTS(GRADE_CD) FROM DUAL) AS GRADE_NM	/* 학년명 */
+					, S.DEPT_CD	/* 학과코드 */
+					, (SELECT DEPT_NM
+						FROM DEPARTMENT D
+						WHERE DEPT_CD = D.DEPT_NO) AS DEPT_NM	/* 학과명 */
+					, S.STRE_CATE_CD	/* 학적상태코드 */
+		            , (SELECT FN_COCO_STTS(STRE_CATE_CD) FROM DUAL) AS STRE_CATE_NM	/* 학적상태명 */
+					, S.PROFE_ID	/* 담당교수교번 */
+					, (SELECT NM 
+		            	FROM PERSON 
+		            	WHERE ID = PROFE_ID) AS PROFE_NM	/* 담당교수명 */
+				FROM STUDENT S
+				INNER JOIN PERSON P ON(S.STU_ID = P.ID)
+				<where>
+					<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.stuId)">
+						AND INSTR(S.STU_ID, #{detailCondition.stuId, jdbcType=VARCHAR}) > 0
+					</if>
+					<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.nm)">
+						AND INSTR(P.NM, #{detailCondition.nm, jdbcType=VARCHAR}) > 0
+					</if>
+					<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.gradeCd)">
+						AND S.GRADE_CD = #{detailCondition.gradeCd, jdbcType=VARCHAR}
+					</if>
+					<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.deptCd)">
+						AND S.DEPT_CD = #{detailCondition.deptCd, jdbcType=VARCHAR}
+					</if>
+					<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.streCateCd)">
+						AND S.STRE_CATE_CD = #{detailCondition.streCateCd, jdbcType=VARCHAR}
+					</if>
+				</where>
+				<foreach collection="orderList" item="order" separator="," open="ORDER BY">
+					${order.column} ${order.dir}
+				</foreach>
+				) A
+			) B
+		<![CDATA[
+		WHERE RNUM >= #{start, jdbcType=NUMERIC} AND RNUM <= #{end, jdbcType=NUMERIC}
+		]]>
+	</select>
+	<select id="getAcademicProbation" resultType="AcademicProbationVO">
+		SELECT 
+			PRO_NO	/* 학사경고번호 */
+			, PRO_RES	/* 학사경고사유 */
+			, PRO_DATE	/* 부여일자 */
+		FROM ACADEMIC_PROBATION
+		WHERE STU_ID = #{stuId, jdbcType=VARCHAR}
+		ORDER BY PRO_NO
+	</select>
+	<select id="getTranscript" resultType="TranscriptVO">
+		SELECT 
+			SEME_CD	/* 학기번호 */
+			, TRANS_TOTAL	/* 최종학점 */
+		FROM TRANSCRIPT
+		WHERE STU_ID = #{stuId, jdbcType=VARCHAR}
+		ORDER BY SEME_CD
+	</select>
+	<resultMap type="StudentVO" id="student" extends="studentList" autoMapping="true">
+		<id property="id" column="STU_ID"/>
+		<collection property="academicProbationList" ofType="AcademicProbationVO" select="getAcademicProbation" column="STU_ID"/>
+		<collection property="transcriptList" ofType="TranscriptVO" select="getTranscript" column="STU_ID"/>
+	</resultMap>
+	<select id="selectStudent" resultMap="student">
+		SELECT
+			S.STU_ID	/* 학번 */
+            , P.NM	/* 학생명 */
+            , S.GRADE_CD	/* 학년코드 */
+			, (SELECT FN_COCO_STTS(GRADE_CD) FROM DUAL) AS GRADE_NM	/* 학년명 */
+			, S.DEPT_CD	/* 학과코드 */
+			, (SELECT DEPT_NM
+				FROM DEPARTMENT D
+				WHERE DEPT_CD = D.DEPT_NO) AS DEPT_NM	/* 학과명 */
+			, S.STRE_CATE_CD	/* 학적상태코드 */
+            , (SELECT FN_COCO_STTS(STRE_CATE_CD) FROM DUAL) AS STRE_CATE_NM	/* 학적상태명 */
+			, S.PROFE_ID	/* 담당교수교번 */
+			, (SELECT NM 
+            	FROM PERSON 
+            	WHERE ID = PROFE_ID) AS PROFE_NM	/* 담당교수명 */
+            , P.BRDT	/* 생년월일 */
+            , P.SEXDSTN_CD	/* 성별코드 */
+            , P.ZIP	/* 우편번호 */
+            , P.RDNMADR	/* 도로명주소 */
+            , P.DADDR	/* 상세주소 */
+            , P.MBTLNUM	/* 휴대폰주소 */
+            , P.EML	/* 이메일 */
+            , P.PROFL_PHOTO	/* 프로필사진 */
+		FROM STUDENT S
+		INNER JOIN PERSON P ON(S.STU_ID = P.ID)
+		WHERE S.STU_ID = #{stuId, jdbcType=VARCHAR}
+	</select>
+	<insert id="insertAcademicProbation">
+		<selectKey keyProperty="proNo" keyColumn="PRO_NO" order="BEFORE" resultType="String">
+			SELECT TO_CHAR(SYSDATE, 'YYYY') || LPAD(SEQ_PRO_NO.NEXTVAL, 5, '0') AS PRO_NO
+			FROM DUAL
+		</selectKey>
+		INSERT INTO ACADEMIC_PROBATION(
+			PRO_NO
+			, STU_ID
+			, PRO_RES
+			, PRO_DATE
+		) VALUES (
+			#{proNo, jdbcType=VARCHAR}
+			, #{stuId, jdbcType=VARCHAR}
+			, #{proRes, jdbcType=VARCHAR}
+			, TO_CHAR(SYSDATE, 'YYYYMMDD')
+		)
+	</insert>
+	<update id="expulsion">
+		UPDATE STUDENT
+			SET
+				STRE_CATE_CD = 'SC04'
+		WHERE
+			STU_ID = #{stuId, jdbcType=VARCHAR}
+	</update>
+	
+	<update id="insertImg">
+		UPDATE PERSON
+			SET
+				PROFL_PHOTO = #{proflPhoto, jdbcType=CLOB} 
+		WHERE
+			ID = '2024300001'
+	</update>
+	<!-- 내가 -->
+	<select id="selectStudentList" resultMap="studentList">
+		SELECT
+		    S.STU_ID
+		    ,P.NM AS NM
+		    ,S.GRADE_CD
+		    ,S.STRE_CATE_CD
+		    ,S.DEPT_CD
+		    ,S.PROFE_ID
+		   ,S.DORMANT_DATE
+		   ,C.COCO_CD AS GRADE_NM
+		FROM STUDENT S
+		INNER JOIN COMMON_CODE C ON (S.GRADE_CD = C.COCO_CD)
+		INNER JOIN PERSON P ON (S.STU_ID = P.ID)
+		
+	</select>
+</mapper>

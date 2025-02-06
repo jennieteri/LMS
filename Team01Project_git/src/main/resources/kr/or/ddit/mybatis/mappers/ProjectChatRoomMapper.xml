@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="kr.or.ddit.yguniv.projectchatroom.dao.ProjectChatRoomMapper">
+<sql id="columns">
+	TEAM_CD						/*팀번호*/
+	,TASK_NO					/*프로젝트과제번호*/
+	,PROJECTCHATROOM_TITLE		/*채팅방명*/
+</sql>
+
+
+<resultMap type="ProjectChatRoomVO" id="ProjectChatRoomMap" autoMapping="true">
+<id column="TEAM_CD" property="teamCd" />
+<association property="team" column="TEAM_CD" 
+			select="kr.or.ddit.yguniv.projectteam.dao.ProjectTeamMapper.selectProjectTeam" />
+</resultMap>
+
+
+<select id="selectProjectChatRoomlist" resultMap="ProjectChatRoomMap">
+ 	SELECT
+			TEAM_CD						/*팀번호*/
+			,TASK_NO					/*프로젝트과제번호*/
+			,PROJECTCHATROOM_TITLE		/*채팅방명*/ 			
+	FROM
+			PROJECTCHATROOM
+	
+	WHERE
+			TASK_NO = #{taskNo, jdbcType=VARCHAR}
+</select>
+
+<select id="selectProjectChatRoom" resultMap="ProjectChatRoomMap">
+	SELECT
+			TEAM_CD						/*팀번호*/
+			,TASK_NO					/*프로젝트과제번호*/
+			,PROJECTCHATROOM_TITLE		/*채팅방명*/ 		
+	FROM
+			PROJECTCHATROOM
+	WHERE
+			TEAM_CD = #{teamCd, jdbcType=VARCHAR}
+
+</select>
+
+<insert id="insertProjectChatRoom">
+	INSERT INTO PROJECTCHATROOM(
+		TEAM_CD						/*팀번호*/
+		,TASK_NO					/*프로젝트과제번호*/
+		,PROJECTCHATROOM_TITLE		/*채팅방명*/
+	)VALUES(
+		 #{teamCd,jdbcType=VARCHAR}
+		 ,#{taskNo,jdbcType=VARCHAR}
+		 ,#{projectchatroomTitle,jdbcType=VARCHAR}
+	)
+</insert>
+
+<update id="updateProjectChatRoom">
+	UPDATE PROJECTCHATROOM
+	SET
+		PROJECTCHATROOM_TITLE = c
+	WHERE
+			TEAM_CD = #{teamCd, jdbcType=VARCHAR}
+</update>
+
+<delete id="deleteProjectChatRoom">
+	DELETE	
+	FROM
+			PROJECTCHATROOM
+	WHERE
+			TEAM_CD = #{teamCd, jdbcType=VARCHAR}
+</delete>
+
+<select id="checkRoomCount" resultType="int">
+
+	SELECT 
+			COUNT(PROJECTCHATROOM_TITLE)
+	FROM 
+			PROJECTCHATROOM
+	WHERE
+			TEAM_CD = #{teamCd, jdbcType=VARCHAR}
+			
+</select>
+
+<select id="checkRoomNameCount" resultType="int">
+	SELECT 
+			COUNT(TEAM_CD)
+	FROM 
+			PROJECTCHATROOM
+	WHERE
+			PROJECTCHATROOM_TITLE = #{projectchatroomTitle,jdbcType=VARCHAR}
+</select>
+
+
+</mapper>

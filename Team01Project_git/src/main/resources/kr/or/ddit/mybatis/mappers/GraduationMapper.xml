@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.yguniv.graduation.dao.GraduationMapper">
+
+
+<resultMap type="GraduationVO" id="GraduationMap" autoMapping="true">
+	<id property="gdtCd" column="GDT_CD"/>
+	<id property="codeName" column="CODENAME"/>
+	<result property="atchFileId" column="ATCH_FILE_ID" />
+	<association property="atchFile" javaType="AtchFileVO">
+        <id property="atchFileId" column="ATCH_FILE_ID" />
+        <collection property="fileDetails" ofType="AtchFileDetailVO">
+            <result property="fileSn" column="FILE_SN" />
+            <result property="fileStreCours" column="FILE_STRE_COURS" />
+            <result property="orignlFileNm" column="ORIGNL_FILE_NM" />
+        </collection>
+    </association>
+</resultMap>
+
+	<!-- 전체 게시글 수 조회 -->
+	<select id="selectTotalRecord" resultType="int">
+	    SELECT COUNT(GDT_CD)
+	    FROM GRADUATION
+	    <where>
+	        <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+	            <choose>
+	                <when test="simpleCondition.searchType eq 'number'">
+	                    INSTR(STU_ID, #{simpleCondition.searchWord}) > 0
+	                </when>
+	                <when test="simpleCondition.searchType eq 'name'">
+	                    INSTR(CODENAME, #{simpleCondition.searchWord}) > 0
+	                </when>
+	                 <when test="simpleCondition.searchType eq 'type'">
+	                    INSTR(TYPE, #{simpleCondition.searchWord}) > 0
+	                </when>
+	                <otherwise>
+	                    (INSTR(STU_ID, #{simpleCondition.searchWord}) > 0
+	                    OR INSTR(CODENAME, #{simpleCondition.searchWord}) > 0
+	                    OR INSTR(TYPE, #{simpleCondition.searchWord}) > 0
+	                </otherwise>
+	            </choose>
+	        </if>
+	    </where>
+	</select>
+
+
+	<insert id="insertgraduation" parameterType="GraduationVO">
+	
+		<selectKey order="BEFORE" resultType="int" keyProperty="gdtCd">
+	        SELECT SEQ_GRADUATION.NEXTVAL FROM DUAL
+	    </selectKey>
+			INSERT INTO GRADUATION (
+			       GDT_CD
+			     , STU_ID
+			     , EMP_ID
+			     , GDT_TYPE
+			     , GDT_NM
+			     , GDT_INST
+			     , GDT_ISSU
+			     , GDT_SCORE
+			     , ATCH_FILE_ID
+			     , COCO_CD
+			)
+			VALUES(
+			     #{gdtCd, jdbcType=NUMERIC}
+			    , #{stuId, jdbcType=VARCHAR}
+			    ,(SELECT EMP_ID FROM (
+			        SELECT EMP_ID 
+			        FROM EMPLOYEE 
+			        WHERE EMP_CD = 'UE03' 
+			        ORDER BY DBMS_RANDOM.VALUE 
+			    ) WHERE ROWNUM = 1)
+			    , #{gdtType, jdbcType=VARCHAR}
+			    , #{gdtNm, jdbcType=VARCHAR}
+			    , #{gdtInst, jdbcType=VARCHAR}
+			    , TO_CHAR(TO_DATE(#{gdtIssu, jdbcType=VARCHAR}, 'YYYY-MM-DD'), 'YYYYMMDD')
+			    , #{gdtScore, jdbcType=NUMERIC}
+			   	, #{atchFileId, jdbcType=NUMERIC}
+			    , 'G003'                  
+			)
+	</insert>
+	
+	<select id="selectgraduationList" resultMap="GraduationMap" >
+		SELECT 
+			  G.GDT_CD
+			, G.STU_ID
+			, G.EMP_ID
+			, G.GDT_TYPE
+			, (SELECT COCO_STTS FROM COMMON_CODE C WHERE G.GDT_TYPE=C.COCO_CD)AS TYPE
+			, G.GDT_NM
+			, G.GDT_INST
+			, TO_CHAR(TO_DATE(G.GDT_ISSU, 'YYYYMMDD'), 'YYYY-MM-DD') AS GDT_ISSU
+			, G.GDT_SCORE
+			, G.COCO_CD
+			, (SELECT COCO_STTS FROM COMMON_CODE C WHERE G.COCO_CD=C.COCO_CD) AS CODENAME
+			, (SELECT NM FROM PERSON P WHERE G.STU_ID=P.ID) AS NM
+			, A.FILE_SN
+			, A.FILE_STRE_COURS
+			, A.ORIGNL_FILE_NM
+ 
+		FROM GRADUATION G
+		LEFT JOIN ATCH_FILE_DETAIL A ON G.ATCH_FILE_ID = A.ATCH_FILE_ID
+		WHERE STU_ID=#{stuId, jdbcType=VARCHAR}
+	
+	</select>
+	
+	<select id="selectgraduationListByEmp" resultMap="GraduationMap" >
+		SELECT *
+		FROM (
+			SELECT A.*, ROWNUM AS RNUM
+			FROM(
+				SELECT 
+					  G.GDT_CD
+					, G.STU_ID
+					, G.EMP_ID
+					, G.GDT_TYPE
+					, (SELECT COCO_STTS FROM COMMON_CODE C WHERE G.GDT_TYPE=C.COCO_CD)AS TYPE
+					, G.GDT_NM
+					, G.GDT_INST
+					, TO_CHAR(TO_DATE(G.GDT_ISSU, 'YYYYMMDD'), 'YYYY-MM-DD') AS GDT_ISSU
+					, G.GDT_SCORE
+					, G.COCO_CD
+					, (SELECT COCO_STTS FROM COMMON_CODE C WHERE G.COCO_CD=C.COCO_CD) AS CODENAME
+		 
+				FROM 
+					GRADUATION G
+				        WHERE 1=1
+                   <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+                    AND
+                     <choose>
+	                <when test="simpleCondition.searchType eq 'number'">
+	                    INSTR(STU_ID, #{simpleCondition.searchWord}) > 0
+	                </when>
+	                <when test="simpleCondition.searchType eq 'name'">
+	                    INSTR(CODENAME, #{simpleCondition.searchWord}) > 0
+	                </when>
+	                 <when test="simpleCondition.searchType eq 'type'">
+	                    INSTR(TYPE, #{simpleCondition.searchWord}) > 0
+	                </when>
+	                <otherwise>
+	                    (INSTR(STU_ID, #{simpleCondition.searchWord}) > 0
+	                    OR INSTR(CODENAME, #{simpleCondition.searchWord}) > 0
+	                    OR INSTR(TYPE, #{simpleCondition.searchWord}) > 0
+	                </otherwise>
+	            </choose>
+                </if>
+            <![CDATA[
+            ORDER BY GDT_ISSU DESC
+            ) A
+            WHERE ROWNUM <= #{endRow}
+        ) B
+        WHERE RNUM >= #{startRow}
+    ]]>
+	</select>
+	
+	<select id="selectgraduationByCd" resultMap="GraduationMap">
+		SELECT 
+			  G.GDT_CD
+			, G.STU_ID
+			, G.EMP_ID
+			, G.GDT_TYPE
+			, (SELECT COCO_STTS FROM COMMON_CODE C WHERE G.GDT_TYPE=C.COCO_CD)AS TYPE
+			, G.GDT_NM
+			, G.GDT_INST
+			, TO_CHAR(TO_DATE(G.GDT_ISSU, 'YYYYMMDD'), 'YYYY-MM-DD') AS GDT_ISSU
+			, G.GDT_SCORE
+			, G.COCO_CD
+			, G.ATCH_FILE_ID
+			, (SELECT COCO_STTS FROM COMMON_CODE C WHERE G.COCO_CD=C.COCO_CD) AS CODENAME
+			, (SELECT NM FROM PERSON P WHERE G.STU_ID=P.ID) AS NM
+			, A.FILE_SN
+			, A.FILE_STRE_COURS
+			, A.ORIGNL_FILE_NM
+			
+ 			
+		FROM GRADUATION G
+		LEFT JOIN ATCH_FILE_DETAIL A ON G.ATCH_FILE_ID = A.ATCH_FILE_ID
+		WHERE G.GDT_CD= #{gdtCd, jdbcType=NUMERIC}
+	</select>
+	
+	
+	
+	
+	<!-- 	봉사활동 점수 합산 -->
+	<select id="selectTotalVolunteerScore" resultType="int">
+	    SELECT SUM(GDT_SCORE)
+	    FROM GRADUATION
+	    WHERE STU_ID = #{stuId} AND GDT_TYPE = 'GT01' AND COCO_CD = 'G001'
+	</select>
+	
+	
+	
+	<select id="selectCocoCdByCd" resultType="string">
+		SELECT COCO_CD
+		FROM GRADUATION
+		WHERE GDT_CD = #{gdtCd, jdbcType=NUMERIC}
+	</select>
+		
+	<update id="updategraduation">
+		UPDATE GRADUATION
+			SET
+			 GDT_NM = #{gdtNm, jdbcType=VARCHAR}
+			, GDT_INST = #{gdtInst, jdbcType=VARCHAR}
+			, GDT_ISSU = TO_CHAR(TO_DATE(#{gdtIssu, jdbcType=VARCHAR}, 'YYYY-MM-DD'), 'YYYYMMDD')
+			, GDT_SCORE = #{gdtScore, jdbcType=NUMERIC}
+			, ATCH_FILE_ID = #{atchFileId, jdbcType=NUMERIC}
+		WHERE GDT_CD =#{gdtCd, jdbcType=NUMERIC} 
+			AND COCO_CD !='G001'
+	</update>
+	
+	
+	<update id="updategraduationToAccess">
+		UPDATE GRADUATION
+			SET COCO_CD='G001'
+		WHERE GDT_CD =#{gdtCd, jdbcType=NUMERIC}
+	</update>
+	
+	<update id="updategraduationToReject">
+		UPDATE GRADUATION
+			SET COCO_CD='G002'
+		WHERE GDT_CD =#{gdtCd, jdbcType=NUMERIC}
+	</update>
+	
+	<delete id="deletegraduation">
+		DELETE FROM GRADUATION
+		WHERE 
+			GDT_CD = #{gdtCd, jdbcType=NUMERIC}
+	</delete>
+</mapper>

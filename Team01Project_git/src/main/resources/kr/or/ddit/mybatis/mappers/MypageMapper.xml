@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.yguniv.mypage.dao.MypageMapper">
+
+<resultMap id="studenttMap" type="PersonVO" autoMapping="true">
+    <result property="id" column="ID" />
+    <association property="departmentVO" javaType="DepartmentVO">
+        <result property="deptNo" column="DEPT_NO" />
+        <result property="deptNm" column="DEPT_NM" />
+    </association>
+ 
+</resultMap>
+
+<select id="selectMyPage" resultMap="studenttMap">
+
+SELECT  
+
+	P.ID,
+    P.PSWD,
+    P.NM,
+    P.BRDT,
+    P.SEXDSTN_CD,
+    P.ZIP,
+    P.RDNMADR,
+    P.DADDR,
+    P.MBTLNUM,
+    P.EML,
+    P.EML_RCPTN_AGRE_YN,
+    P.SMS_RCPTN_AGRE_YN,
+    P.CRTFC_MN_CD,
+    P.LAST_CONECT_DE,
+    P.PSWD_FAILR_CO,
+    P.PERSON_YN,
+    P.PROFL_PHOTO,
+    S.STRE_CATE_CD,
+    D.DEPT_NO AS DEPT_NO,
+    D.DEPT_NM AS DEPT_NM
+    
+
+FROM PERSON P
+LEFT OUTER JOIN STUDENT S ON P.ID = S.STU_ID 
+LEFT OUTER JOIN DEPARTMENT D ON S.DEPT_CD = D.DEPT_NO 
+
+WHERE P.ID = #{id, jdbcType=VARCHAR}
+</select>
+
+<update id="updateMyPage" parameterType="PersonVO">
+UPDATE PERSON
+SET NM = #{nm, jdbcType=VARCHAR},
+    PSWD = #{pswd, jdbcType=VARCHAR},
+    BRDT = #{brdt, jdbcType=VARCHAR},
+    ZIP = #{zip, jdbcType=VARCHAR},
+    RDNMADR = #{rdnmadr, jdbcType=VARCHAR},
+    DADDR = #{daddr, jdbcType=VARCHAR},
+    EML = #{eml, jdbcType=VARCHAR},
+    EML_RCPTN_AGRE_YN = CASE WHEN #{emlRcptnAgreYn} IS NULL THEN 'N' ELSE #{emlRcptnAgreYn} END,
+    SMS_RCPTN_AGRE_YN = CASE WHEN #{smsRcptnAgreYn} IS NULL THEN 'N' ELSE #{smsRcptnAgreYn} END,
+    PROFL_PHOTO = #{proflPhoto, jdbcType=CLOB},
+    MBTLNUM = #{mbtlnum, jdbcType=VARCHAR}
+   
+   
+WHERE ID = #{id, jdbcType=VARCHAR}
+</update>
+
+		<update id="updateStudentCategoryWithMerge" parameterType="PersonVO">
+		    MERGE INTO STUDENT S
+		    USING DUAL
+		    ON (S.STU_ID = #{id})
+		    WHEN MATCHED THEN
+		        UPDATE 
+		        SET S.STRE_CATE_CD = 'SC01'
+		        WHERE S.STRE_CATE_CD = 'SC06'
+		</update>
+
+
+
+
+
+
+</mapper>

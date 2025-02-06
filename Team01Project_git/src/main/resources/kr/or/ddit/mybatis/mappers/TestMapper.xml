@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.yguniv.test.dao.TestMapper">
+
+	<resultMap type="TestVO" id="testMap" autoMapping="true">
+		<result property="testNo" column="TEST_NO"/>
+		<association property="lectVO" javaType="LectureVO" autoMapping="true">
+			<association property="professorVO" javaType="ProfessorVO" autoMapping="true">
+<!-- 				<association property="person" javaType="PersonVO" autoMapping="true"></association> -->
+			</association>
+		</association>
+		<association property="classroomVO" javaType="ClassRoomVO" autoMapping="true"></association>
+		<association property="commonVO" javaType="CommonCodeVO" autoMapping="true"></association>
+	</resultMap> 
+
+
+<select id="selectTestOneList" resultMap="testMap">
+			SELECT
+			      T.TEST_NO /* 시험번호 */
+			    , T.TEST_SE /* 중간,기말 */
+			    , T.TEST_CD /* 상태 - 등록,반려,대기  */
+			    , L.LECT_NM /* 강의명 */
+			    , M.NM		 /* 교수명 */
+			    
+			    , C.CROOM_CD /* 강의실 번호 */
+			    , C.CROOM_PSTN /* 강의실 위치 */
+			    , C.CROOM_NM /* 강의실 이름*/
+			    , CO.COCO_STTS /* 상태 코드 명  */
+			    , T.TEST_DT /* 시작시간 */
+			    , T.TEST_ET /* 종료시간 */
+			    , T.TEST_SCHDL /* 시험일자  */
+			FROM
+			    TEST T INNER JOIN LECTURE L ON T.LECT_NO=L.LECT_NO 
+			           INNER JOIN PROFESSOR P ON L.PROFE_ID = P.PROFE_ID
+			           INNER JOIN PERSON M ON P.PROFE_ID = M.ID
+			           LEFT OUTER JOIN CLASS_ROOM C ON T.CROOM_CD = C.CROOM_CD
+			           INNER JOIN COMMON_CODE CO ON T.TEST_CD=CO.COCO_CD
+		--	WHERE T.TEST_CD='COMP'
+</select>
+
+
+
+
+<select id="selectTestList" resultMap="testMap">
+    SELECT B.*
+    FROM
+    (
+        SELECT ROWNUM RNUM, A.*
+        FROM
+        (
+            SELECT
+                T.TEST_NO, T.TEST_SE, T.TEST_CD, L.LECT_NM, M.NM, 
+                C.CROOM_CD, C.CROOM_PSTN, C.CROOM_NM, CO.COCO_STTS, 
+                T.TEST_DT, T.TEST_ET, T.TEST_SCHDL
+            FROM
+                TEST T 
+                INNER JOIN LECTURE L ON T.LECT_NO = L.LECT_NO
+                INNER JOIN PROFESSOR P ON L.PROFE_ID = P.PROFE_ID
+                INNER JOIN PERSON M ON P.PROFE_ID = M.ID
+                LEFT OUTER JOIN CLASS_ROOM C ON T.CROOM_CD = C.CROOM_CD
+                INNER JOIN COMMON_CODE CO ON T.TEST_CD = CO.COCO_CD
+            <where>
+                <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(paging.simpleCondition.searchType)">
+                    T.TEST_CD = #{paging.simpleCondition.searchType}
+                </if>
+            </where>
+            ORDER BY T.TEST_NO DESC
+        ) A
+    ) B
+    <![CDATA[
+    WHERE RNUM >= #{paging.startRow} AND RNUM <= #{paging.endRow}
+    ]]>
+</select>
+
+
+<resultMap id="testResultMap" type="TestVO" autoMapping="true">
+    <id property="testNo" column="TEST_NO"/>
+    <collection property="questionVO" ofType="QuestionVO" autoMapping="true">
+        <id property="queNo" column="QUE_NO"/>
+        <collection property="answerVO" ofType="AnswerChoiceVO" autoMapping="true">
+            <id property="anchNo" column="ANCH_NO"/>
+        </collection>
+    </collection>
+</resultMap>
+
+<!-- <resultMap id="testResultMap" type="TestVO" autoMapping="false"> -->
+<!--     <id property="testNo" column="TEST_NO"/> -->
+<!--     <result property="testSe" column="TEST_SE"/> -->
+<!--     <result property="testCd" column="TEST_CD"/> -->
+<!--     <result property="testOnlineYn" column="TEST_ONLINE_YN"/> -->
+<!--     <result property="testSchdl" column="TEST_SCHDL"/> -->
+<!--     <result property="testDt" column="TEST_DT"/> -->
+<!--     <result property="testEt" column="TEST_ET"/> -->
+<!--     <collection property="questionVO" ofType="QuestionVO"> -->
+<!--         <id property="queNo" column="QUE_NO"/> -->
+<!--         <result property="queDescr" column="QUE_DESCR"/> -->
+<!--         <result property="queType" column="QUE_TYPE"/> -->
+<!--         <result property="queScore" column="QUE_SCORE"/> -->
+<!--         <result property="queAnswer" column="QUE_ANSWER"/> -->
+<!--         <collection property="answerVO" ofType="AnswerChoiceVO"> -->
+<!--             <id property="anchNo" column="ANCH_NO"/> -->
+<!--             <result property="anchDescr" column="ANCH_DESCR"/> -->
+<!--         </collection> -->
+<!--     </collection> -->
+<!-- </resultMap> -->
+
+<select id="selectTestOne" resultMap="testResultMap">
+ SELECT 
+        T.TEST_NO
+        , T.TEST_SE
+        , T.TEST_CD
+        , T.TEST_ONLINE_YN
+        , T.TEST_SCHDL
+        , T.CROOM_CD
+        , (SELECT CROOM_PSTN FROM CLASS_ROOM WHERE CROOM_CD = T.CROOM_CD) AS CROOM_CD_NM
+        , L.LECT_NO
+        , T.TEST_DT
+        , T.TEST_ET
+        , Q.QUE_NO
+        , Q.QUE_DESCR
+        , Q.QUE_TYPE
+        , Q.QUE_SCORE
+        , Q.QUE_ANSWER
+        , AC.ANCH_NO
+        , AC.ANCH_DESCR
+    FROM 
+        TEST T
+        INNER JOIN QUESTION Q ON T.TEST_NO = Q.TEST_NO
+        INNER JOIN LECTURE L ON T.LECT_NO = L.LECT_NO
+        LEFT OUTER JOIN ANSWER_CHOICE AC ON T.TEST_NO = AC.TEST_NO AND Q.QUE_NO=AC.QUE_NO
+    WHERE 
+        T.TEST_NO = #{testNo}
+    ORDER BY Q.QUE_NO
+</select>
+
+<update id="checkTest">
+UPDATE test
+SET
+    TEST_CD=#{TEST_CD}
+WHERE
+        TEST_NO = #{TEST_NO}
+</update>
+
+<insert id="insertTest" >
+   <selectKey keyProperty="testNo" resultType="java.lang.String" order="BEFORE">
+        SELECT CONCAT('TEST', LPAD(CAST(SUBSTR(max(test_no), 5) AS INT) + 1, 3, '0')) FROM TEST
+    </selectKey>
+
+INSERT INTO test (
+    test_no
+    , lect_no
+    , test_se
+    , test_cd
+    , test_online_yn
+    , test_schdl
+    , test_dt
+    , test_et
+    <if test='testOnlineYn.equalsIgnoreCase("N")'>
+    , croom_cd 
+    </if>
+) VALUES (
+	(SELECT CONCAT('TEST',LPAD(CAST(SUBSTR(max(test_no),5) AS INT)+1,3,'0')) FROM  TEST)
+	, #{lectNo,jdbcType=VARCHAR}
+	, #{testSe,jdbcType=VARCHAR}
+	, 'COMP'
+	, #{testOnlineYn,jdbcType=CHAR} /*온라인의 유무에 따라 강의실이 있거나 없어야함*/
+	, #{testSchdl,jdbcType=VARCHAR}
+	, #{testDt,jdbcType=VARCHAR}
+	, #{testEt,jdbcType=VARCHAR}   
+    <if test='testOnlineYn.equalsIgnoreCase("N")'>
+    , #{croomCd,jdbcType=VARCHAR}  
+    </if>
+)
+</insert>
+<insert id="insertQuestion">
+INSERT INTO question (
+    que_no
+    , test_no
+    , que_descr
+    , que_type
+    , que_score
+    <if test='!queType.equals("서술형")'>
+    , que_answer
+    </if>
+) VALUES (
+	 #{queNo,jdbcType=VARCHAR}
+	, (SELECT max(test_no) FROM  TEST)
+	, #{queDescr,jdbcType=VARCHAR}
+	, #{queType,jdbcType=VARCHAR}
+	, #{queScore,jdbcType=VARCHAR}
+    <if test='!queType.equals("서술형")'>
+	, #{queAnswer,jdbcType=VARCHAR}
+    </if>
+)  
+</insert>
+
+<insert id="insertAnswerChoice">
+   <selectKey keyProperty="anchNo" resultType="java.lang.String" order="BEFORE">
+        SELECT CONCAT('A', LPAD(CAST(SUBSTR(max(anch_no), 2) AS INT) + 1, 3, '0')) FROM answer_choice
+    </selectKey>
+INSERT INTO answer_choice (
+    anch_no
+    , que_no
+    , test_no
+    , anch_descr
+) VALUES (
+	#{anchNo,jdbcType=VARCHAR}
+	, #{queNo,jdbcType=VARCHAR}
+	, (SELECT max(test_no) FROM  TEST)
+	, #{anchDescr,jdbcType=VARCHAR}
+)
+</insert>
+
+<select id="getProfeId" resultType="String">
+	select 
+    p.id
+from    
+    test t inner join lecture l on l.lect_no = t.lect_no
+           inner join person p on l.profe_id = p.id
+where  t.test_no=#{testNo}
+</select>
+
+<update id="updateTest" parameterType="TestVO">
+
+UPDATE test
+
+SET
+	 test_se =#{testVO.testSe}        
+	, test_cd ='COMP'       
+	, test_online_yn = #{testVO.testOnlineYn} 
+	, test_schdl = #{testVO.testSchdl}     
+	, test_dt = #{testVO.testDt}        
+	, test_et = #{testVO.testEt}
+	<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(testVO.croomCd)">
+	, croom_cd = #{testVO.croomCd}     
+	</if>        
+
+WHERE
+        test_no = #{testVO.testNo}
+</update>
+
+<delete id="deleteQuestion">
+DELETE FROM question
+WHERE
+    test_no = #{testNo}
+
+</delete>
+
+<delete id="deleteAnswer">
+DELETE FROM answer_choice
+WHERE
+
+    test_no = #{testNo}
+</delete>
+
+<delete id="deleteTest">
+DELETE FROM test
+WHERE
+
+    test_no = #{testNo}
+
+</delete>
+
+<select id="getQuestion" resultType="Integer">
+select count(que_no)
+from question
+where test_no = #{testNo}
+</select>
+
+<select id="getAnswer" resultType="Integer">
+select count(que_no)
+from answer_choice
+where test_no = #{testNo}
+</select>
+
+
+
+</mapper>
+
+

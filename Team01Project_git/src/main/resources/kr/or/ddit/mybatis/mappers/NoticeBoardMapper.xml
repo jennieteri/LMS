@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="kr.or.ddit.yguniv.noticeboard.dao.NoticeBoardMapper">
+	<sql id="columns">
+	NTC_CD			/*공지번호*/
+	,PRS_ID			/*작성자*/
+	,NTC_YN			/*주요일정번호*/
+	,ATCH_FILE_ID	/*첨부파일그룹번호*/
+	,NTC_NM			/*제목*/
+	,NTC_DESC		/*내용*/
+	,NTC_DT			/*일정시작일*/
+	,NTC_ET			/*일정종료일*/
+	,NTC_INQ_CNT	/*조회수*/
+	,COCO_CD		/*주요일정코드*/
+	,SEMSTR_NO		/*학기번호*/
+	</sql>
+	
+	<sql id="selectcolumns">
+	NTC_CD
+	, PRS_ID
+	, NTC_YN
+	, ATCH_FILE_ID
+	, NTC_NM
+	, NTC_DESC
+	, TO_DATE(NTC_DT, 'YYYY-MM-DD') AS NTC_DT
+	, TO_DATE(NTC_ET, 'YYYY-MM-DD') AS NTC_ET
+	, NTC_INQ_CNT
+	,COCO_CD		/*주요일정코드*/
+	,SEMSTR_NO		/*학기번호*/
+	</sql>
+	
+<!-- 게시글 생성 -->	
+<insert id="insertNoticeBoard" useGeneratedKeys="true" keyProperty="ntcCd">
+	<selectKey order="BEFORE" resultType="int" keyProperty="ntcCd">
+		SELECT SEQ_NOTICEBOARD.NEXTVAL FROM DUAL
+	</selectKey>
+	INSERT INTO NOTICEBOARD(
+	<include refid="columns" />
+	) VALUES(
+	 #{ntcCd,jdbcType=NUMERIC}
+	, #{prsId,jdbcType=VARCHAR}
+	, #{ntcYn,jdbcType=VARCHAR}
+	, #{atchFileId,jdbcType=NUMERIC}
+	, #{ntcNm,jdbcType=VARCHAR}
+	, #{ntcDesc,jdbcType=VARCHAR}
+	<if test="ntcDt neq null">
+	, TO_CHAR(#{ntcDt, javaType=java.time.LocalDate}, 'YYYY-MM-DD')
+	</if>
+	<if test="ntcDt eq null">
+	, TO_CHAR(SYSDATE, 'YYYY-MM-DD')
+	</if>
+	<if test="ntcEt neq null">
+	, TO_CHAR(#{ntcEt, javaType=java.time.LocalDate}, 'YYYY-MM-DD')
+	</if>
+	<if test="ntcEt eq null">
+	, TO_CHAR(SYSDATE, 'YYYY-MM-DD')
+	</if>
+	, 0
+	, #{cocoCd,jdbcType=VARCHAR}
+	, #{semstrNo,jdbcType=VARCHAR}
+	)
+</insert>
+
+<resultMap type="NoticeBoardVO" id="boardMap" autoMapping="true">
+	<id property="ntcCd" column="NTC_CD" />
+	<result property="atchFileId" column="ATCH_FILE_ID" />
+	<association property="atchFile" column="ATCH_FILE_ID"
+			select="kr.or.ddit.yguniv.atch.dao.AtchFileMapper.selectAtchFileEnable" />
+</resultMap>
+
+<select id="selectNoticeBoard" resultMap="boardMap">
+	SELECT
+	<include refid="selectcolumns" />
+	FROM NOTICEBOARD
+	WHERE NTC_CD = #{ntcCd,jdbcType=NUMERIC}
+</select>
+
+<update id="incrementCnt">
+	UPDATE NOTICEBOARD
+	SET
+		NTC_INQ_CNT = NTC_INQ_CNT + 1
+	WHERE NTC_CD = #{ntcCd,jdbcType=NUMERIC}
+</update>
+
+<!-- 검색 조건 -->
+	<sql id="searchFrag">
+		<where>
+			<if
+				test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+				<choose>
+					<when
+						test="simpleCondition.searchType eq 'title'">
+						INSTR(NTC_NM, #{simpleCondition.searchWord}) > 0
+					</when>
+					<when
+						test="simpleCondition.searchType eq 'writer'">
+						INSTR(PRS_ID, #{simpleCondition.searchWord}) > 0
+					</when>
+					<when
+						test="simpleCondition.searchType eq 'content'">
+						INSTR(NTC_DESC, #{simpleCondition.searchWord}) > 0
+					</when>
+					<otherwise>
+						INSTR(NTC_NM, #{simpleCondition.searchWord}) > 0 
+						OR INSTR(PRS_ID, #{simpleCondition.searchWord}) > 0 
+						OR INSTR(NTC_DESC, #{simpleCondition.searchWord}) > 0
+					</otherwise>
+				</choose>
+			</if>
+		</where>
+	</sql>
+
+<!-- 전체 게시글 수 조회 -->
+<select id="selectTotalRecord" resultType="int">
+		SELECT COUNT(NTC_CD) FROM NOTICEBOARD
+		<include refid="searchFrag" />
+</select>
+
+<!-- 페이징처리 글목록조회 -->
+<select id="selectNoticeBoardlistPaging" resultType="NoticeBoardVO">
+		SELECT
+				C.*
+		FROM
+			(
+			SELECT ROWNUM RNUM
+					,B.* 
+			FROM 
+					( 
+					SELECT 
+							ROWNUM TEMP_RNUM
+							, A.* 
+					FROM 
+						( 
+							SELECT
+							<include refid="selectcolumns" />
+							FROM NOTICEBOARD
+							<include refid="searchFrag" />
+							ORDER BY NTC_CD DESC 
+					) A 
+					ORDER BY TEMP_RNUM DESC
+			) B
+			
+		)C
+		<![CDATA[
+		WHERE TEMP_RNUM >= #{startRow} AND TEMP_RNUM <= #{endRow}
+		]]>
+		ORDER BY RNUM DESC
+</select>
+
+<!-- 논페이징 글목록조회 -->
+<select id="selectNoticeBoardlist" resultType="NoticeBoardVO">
+		SELECT A.*, ROWNUM RNUM 
+		FROM 
+		( 
+			SELECT
+				<include refid="selectcolumns" />
+			FROM NOTICEBOARD ORDER BY NTC_CD DESC 
+		) A
+</select>
+
+<update id="updateNoticeBoard">
+	UPDATE NOTICEBOARD
+	
+	SET
+		NTC_NM = #{ntcNm,jdbcType=VARCHAR}
+		,NTC_DESC = #{ntcDesc,jdbcType=VARCHAR}
+		,COCO_CD = #{cocoCd,jdbcType=VARCHAR}
+		,SEMSTR_NO = #{semstrNo,jdbcType=VARCHAR}
+		,NTC_YN = #{ntcYn,jdbcType=VARCHAR}
+		<if test="ntcDt neq null">
+		, NTC_DT = TO_CHAR(#{ntcDt, javaType=java.time.LocalDate}, 'YYYY-MM-DD')
+		</if>
+		
+		<if test="ntcEt neq null">
+		, NTC_ET = TO_CHAR(#{ntcEt, javaType=java.time.LocalDate}, 'YYYY-MM-DD')
+		</if>
+		
+		<if test="atchFileId neq null">
+				, ATCH_FILE_ID = #{atchFileId,jdbcType=NUMERIC}
+		</if>
+		
+	WHERE 
+		NTC_CD = #{ntcCd,jdbcType=NUMERIC}
+</update>
+
+<delete id="deleteNoticeBoard">
+	DELETE
+	 FROM 
+	 		NOTICEBOARD
+	WHERE 
+			NTC_CD = #{ntcCd,jdbcType=NUMERIC}
+</delete>
+
+<select id="getStudentList" resultType="String">
+		 SELECT 
+             STU_ID
+         FROM 
+             PERSON A INNER JOIN STUDENT B ON A.ID=B.STU_ID
+         WHERE 
+             A.PERSON_YN ='N' 
+             AND B.STRE_CATE_CD  = 'SC01'
+             AND B.DORMANT_DATE IS NULL
+</select>
+
+
+</mapper>

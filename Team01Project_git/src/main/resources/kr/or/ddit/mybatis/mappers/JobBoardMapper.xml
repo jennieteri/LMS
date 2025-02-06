@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.yguniv.jobboard.dao.JobBoardMapper">
+
+<select id="selectTotalRecord" resultType="int">
+		SELECT COUNT(JOB_NO) FROM JOB_BOARD
+		 WHERE JOB_YN = 'N'
+                <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+                    <choose>
+                        <when test="simpleCondition.searchType eq 'title'">
+                            AND INSTR(JOB_NM, #{simpleCondition.searchWord}) > 0
+                        </when>
+                        <when test="simpleCondition.searchType eq 'category'">
+                            AND INSTR(JOB_CATE, #{simpleCondition.searchWord}) > 0
+                        </when>
+                        <otherwise>
+                            AND (INSTR(JOB_NM, #{simpleCondition.searchWord}) > 0
+                            OR INSTR(JOB_CATE, #{simpleCondition.searchWord}) > 0
+                            )
+                        </otherwise>
+                    </choose>
+                </if>
+</select>
+
+
+<select id="isUserRegisteredForJobBoard" resultType="int">
+    SELECT CASE 
+           WHEN COUNT(*) > 0 THEN 1
+           ELSE 0
+           END
+    FROM EVENT_REGISTRANT
+    WHERE JOB_NO = #{jobNo, jdbcType=VARCHAR}     
+      AND STU_ID = #{stuId, jdbcType=VARCHAR}
+</select>
+
+<!-- 취업정보 게시판 게시글 작성 -->
+<insert id="insertJobBoard" parameterType="JobBoardVO">
+
+    <!-- jobNo를 SEQUENCE를 통해 먼저 가져옴 -->
+    <selectKey order="BEFORE" resultType="String" keyProperty="jobNo">
+        SELECT JOB_BOARD_SEQ.NEXTVAL FROM DUAL
+    </selectKey>
+
+    INSERT INTO JOB_BOARD (
+         JOB_NO
+        ,JOB_NM
+        ,JOB_DATE
+        ,JOB_CATE
+        ,JOB_CNT
+        ,JOB_DT
+        ,JOB_ET
+        ,JOB_LIMIT
+        ,ATCH_FILE_ID
+        ,JOB_YN
+        ,JOB_CONTENT
+        ,ID
+    ) VALUES (
+         #{jobNo, jdbcType=VARCHAR}     
+        ,#{jobNm, jdbcType=VARCHAR}   
+        ,SYSDATE                       
+        ,#{jobCate, jdbcType=VARCHAR}  
+        ,'0'                           
+        ,#{jobDt, jdbcType=DATE}        
+        ,#{jobEt, jdbcType=DATE}        
+        ,#{jobLimit, jdbcType=VARCHAR} 
+        ,#{atchFileId, jdbcType=NUMERIC} 
+        ,'N'                           
+        ,#{jobContent, jdbcType=VARCHAR}
+        ,#{id, jdbcType=VARCHAR}
+    )
+</insert>
+
+<resultMap type="JobBoardVO" id="boardMap" autoMapping="true">
+		<id property="jobNo" column="JOB_NO" jdbcType="VARCHAR"/>
+		<result property="atchFileId" column="ATCH_FILE_ID" />
+	<association property="atchFile" column="ATCH_FILE_ID"
+		select ="kr.or.ddit.yguniv.atch.dao.AtchFileMapper.selectAtchFileEnable"/>
+	 <!-- has-many 관계로 여러 EventRegistrant 객체를 가져옴 -->
+  	<collection property="eventRegistrants" ofType="EventRegistrantVO"
+    column="JOB_NO" />
+</resultMap>
+
+
+<!-- 페이징 처리 -->
+<select id="selectJobBoardListPaging" resultType="JobBoardVO">
+    SELECT C.*
+    FROM (
+        SELECT B.*, ROWNUM AS RNUM
+        FROM (
+            SELECT A.*, ROWNUM AS SN
+            FROM (
+                SELECT 
+                    JOB_NO,
+                    JOB_NM,
+                    JOB_DATE,
+                    JOB_CATE,
+                    JOB_CNT,
+                    JOB_DT,
+                    JOB_ET,
+                    JOB_LIMIT,
+                    ATCH_FILE_ID,
+                    JOB_YN,
+                    JOB_CONTENT
+                FROM JOB_BOARD
+                WHERE JOB_YN = 'N'
+                <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+                    <choose>
+                        <when test="simpleCondition.searchType eq 'title'">
+                            AND INSTR(JOB_NM, #{simpleCondition.searchWord}) > 0
+                        </when>
+                        <when test="simpleCondition.searchType eq 'category'">
+                            AND INSTR(JOB_CATE, #{simpleCondition.searchWord}) > 0
+                        </when>
+                        <otherwise>
+                            AND (INSTR(JOB_NM, #{simpleCondition.searchWord}) > 0
+                            OR INSTR(JOB_CATE, #{simpleCondition.searchWord}) > 0
+                            )
+                        </otherwise>
+                    </choose>
+                </if>
+                ORDER BY JOB_NO 
+            ) A
+        ) B
+    ) C
+    <![CDATA[
+		WHERE RNUM >= #{startRow} AND RNUM <= #{endRow}
+	]]>
+</select>
+
+	<update id="jobCount">
+		UPDATE JOB_BOARD
+		SET
+			JOB_CNT = JOB_CNT+1
+		WHERE JOB_NO = #{jobNo,jdbcType= VARCHAR}
+
+	</update>
+	
+	
+	
+	<select id="selectJobBoard" resultMap="boardMap">
+		SELECT
+			    JB.JOB_NO,
+			    JB.JOB_NM,
+			    JB.JOB_DATE,
+			    JB.JOB_CATE,
+			    JB.JOB_CNT,
+			    JB.JOB_DT,
+			    JB.JOB_ET,
+			    JB.JOB_LIMIT,
+			    JB.ATCH_FILE_ID,
+			    JB.JOB_YN,
+			    JB.JOB_CONTENT,
+			    JB.ID,
+			    P.NM AS WRITER_NM 
+			FROM
+			    JOB_BOARD JB
+			INNER JOIN PERSON P ON JB.ID = P.ID 
+		WHERE
+    	JB.JOB_NO = #{jobNo, jdbcType=VARCHAR}
+
+	</select>
+	
+
+	 
+	<update id="updateJobBoard">
+		UPDATE JOB_BOARD
+		SET
+			 JOB_NM = #{jobNm,jdbcType=VARCHAR}
+			,JOB_CATE = #{jobCate, jdbcType=VARCHAR}
+			<if test="jobDt neq null">
+			,JOB_DT = #{jobDt, jdbcType=DATE} 
+			</if>
+			<if test="jobEt neq null">
+			,JOB_ET = #{jobEt, jdbcType=DATE}
+			</if>
+			,JOB_LIMIT = #{jobLimit, jdbcType=VARCHAR}
+			<if test="atchFileId neq null">
+			, ATCH_FILE_ID = #{atchFileId,jdbcType=NUMERIC}
+			</if>
+			, JOB_CONTENT = #{jobContent, jdbcType=VARCHAR}
+		WHERE JOB_NO = #{jobNo, jdbcType=VARCHAR}
+	</update>
+	
+	<update id="deletejobBoard">
+	UPDATE JOB_BOARD
+		SET JOB_YN ='Y'
+	WHERE JOB_NO = #{jobNo, jdbcType=VARCHAR}
+	</update>
+	
+	<!-- 취업정보게시판 통계 -->
+	<select id="jobBoardStatistics" resultType="map">
+		SELECT 
+		    (SELECT COUNT(*) FROM JOB_BOARD WHERE JOB_DT &lt;= SYSDATE AND JOB_ET >= SYSDATE AND JOB_CATE = '채용공고' AND JOB_YN='N') AS JOB_POSTING,
+		    (SELECT COUNT(*) FROM JOB_BOARD WHERE JOB_DT &lt;= SYSDATE AND JOB_ET >= SYSDATE AND JOB_CATE = '채용설명회' AND JOB_YN='N') AS JOB_BRIEFING,
+		    (SELECT COUNT(*) FROM JOB_BOARD WHERE JOB_DT >= TRUNC(SYSDATE) - 3 AND JOB_CATE = '채용공고' AND JOB_YN='N') AS LAST_CLOSE_COUNT_POSTING,
+		    (SELECT COUNT(*) FROM JOB_BOARD WHERE JOB_DT >= TRUNC(SYSDATE) - 3 AND JOB_CATE = '채용설명회' AND JOB_YN='N') AS LAST_CLOSE_COUNT_BRIEFING
+		FROM DUAL
+	</select>
+
+</mapper>

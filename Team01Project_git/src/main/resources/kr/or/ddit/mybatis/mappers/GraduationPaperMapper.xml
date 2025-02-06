@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="kr.or.ddit.yguniv.graduationpaper.dao.GraduationPaperMapper">
+	
+<resultMap id="GraduationPaperResultMap" type="GraduationPaperVO" autoMapping="true">
+    <id property="gpaCd" column="GPA_CD"/>
+    <result property="gpaNm" column="GPA_NM"/>
+    <result property="gpaDate" column="GPA_DATE"/>
+    <result property="gpaDnm" column="GPA_DNM"/>
+    <result property="gpaSub" column="GPA_SUB"/>
+    <result property="atchFileId" column="ATCH_FILE_ID"/>
+	<association property="atchFile" column="ATCH_FILE_ID"
+		select ="kr.or.ddit.yguniv.atch.dao.AtchFileMapper.selectAtchFileEnable"/>
+    
+    <!-- 학생 정보 -->
+    <association property="student" javaType="PersonVO">
+        <id property="id" column="ID"/>
+        <result property="nm" column="NM"/>
+    </association>
+
+    <!-- 교수 정보 -->
+    <association property="professor" javaType="PersonVO">
+        <id property="id" column="ID"/>
+        <result property="nm" column="NM"/>
+    </association>
+</resultMap>
+
+	<!-- 전체 게시글 수 조회 -->
+	<select id="selectTotalRecord" resultType="int">
+	    SELECT COUNT(GPA_CD)
+	    FROM GRADUATION_PAPER
+	    <where>
+	        <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+	            <choose>
+	                <when test="simpleCondition.searchType eq 'number'">
+	                    INSTR(GPA_CD, #{simpleCondition.searchWord}) > 0
+	                </when>
+	                <when test="simpleCondition.searchType eq 'name'">
+	                    INSTR(GPA_NM, #{simpleCondition.searchWord}) > 0
+	                </when>
+	                <otherwise>
+	                    (INSTR(GPA_CD, #{simpleCondition.searchWord}) > 0
+	                    OR INSTR(GPA_NM, #{simpleCondition.searchWord}) > 0
+	                </otherwise>
+	            </choose>
+	        </if>
+	    </where>
+	</select>
+
+	<select id="getGraduationPapers" resultMap="GraduationPaperResultMap">
+		SELECT
+			ROWNUM AS RNUM
+					, G.GPA_CD
+					, G.STU_ID
+					, G.GPA_NM
+					, TO_CHAR(TO_DATE(G.GPA_DATE, 'YYYYMMDD'), 'YYYY-MM-DD') AS GPA_DATE
+					, G.ATCH_FILE_ID
+					, G.GPA_DNM
+					, G.GPA_SUB
+					, (SELECT COCO_STTS FROM COMMON_CODE C WHERE C.COCO_CD=G.GPA_STATUS) AS GPA_STATUS
+					, S.PROFE_ID AS PROF_ID -- 담당 교수 ID
+					, P.NM AS STUDENT_NM -- 학생 이름
+					, PR.NM AS PROFESSOR_NM -- 교수 이름
+				FROM GRADUATION_PAPER G
+			INNER JOIN STUDENT S ON G.STU_ID = S.STU_ID -- STUDENT와 조인
+			INNER JOIN PERSON P ON P.ID = S.STU_ID -- 학생의 이름 가져오기
+			INNER JOIN PERSON PR ON PR.ID= S.PROFE_ID -- 교수의 이름 가져오기
+			WHERE G.STU_ID = #{stuId, jdbcType=VARCHAR}
+	</select>
+	
+	
+		
+	<insert id="insertGraduationPaper" parameterType="GraduationPaperVO">
+	
+		<selectKey order="BEFORE" resultType="int" keyProperty="gpaCd">
+	        SELECT SEQ_GRADUATIONPAPER.NEXTVAL FROM DUAL
+	    </selectKey>
+			INSERT INTO GRADUATION_PAPER (
+			       GPA_CD
+			     , GPA_NM
+			     , STU_ID
+			     , GPA_DATE
+			     , ATCH_FILE_ID
+			     , GPA_DNM
+			     , GPA_SUB
+			     , GPA_STATUS
+			     , GPA_REJECTION_REASON
+			)
+			VALUES(
+			     #{gpaCd, jdbcType=NUMERIC}
+			    , #{gpaNm, jdbcType=VARCHAR}
+			    , #{stuId, jdbcType=VARCHAR}
+			    , TO_CHAR(SYSDATE, 'YYYYMMDD')
+			   	, #{atchFileId, jdbcType=NUMERIC}
+			    , #{gpaDnm, jdbcType=VARCHAR}
+			    , #{gpaSub, jdbcType=VARCHAR}
+			    , 'G003'
+			    , NULL                 
+			)
+		</insert>
+	
+	<select id="getPaperById" parameterType="int" resultMap="GraduationPaperResultMap">
+		SELECT 
+		    G.GPA_CD,
+		    G.GPA_NM,
+		    G.STU_ID,
+		    TO_CHAR(TO_DATE(GPA_DATE, 'YYYYMMDD'), 'YYYY-MM-DD') AS GPA_DATE, 
+		    G.ATCH_FILE_ID,
+		    G.GPA_DNM,
+		    G.GPA_SUB,
+		    G.GPA_STATUS,
+		    G.GPA_REJECTION_REASON,
+		    A.FILE_SN,
+		    A.FILE_STRE_COURS,
+		    A.ORIGNL_FILE_NM
+		FROM 
+		    GRADUATION_PAPER G
+		LEFT JOIN ATCH_FILE_DETAIL A ON G.ATCH_FILE_ID = A.ATCH_FILE_ID
+		WHERE 
+		    G.GPA_CD = #{gpaCd, jdbcType=NUMERIC}
+
+	</select>
+	
+	<select id="getProfessorStudentsPapers" parameterType="string" resultType="GraduationPaperVO">
+	    SELECT 
+	    	ROWNUM AS RNUM,
+	        GP.GPA_CD, 
+	        GP.GPA_NM, 
+	        GP.STU_ID, 
+	        P.NM,
+	        TO_CHAR(TO_DATE(GP.GPA_DATE, 'YYYYMMDD'), 'YYYY-MM-DD') AS GPA_DATE, 
+	        GP.GPA_STATUS, 
+	        P.NM AS STUDENT_NM
+	    FROM 
+	        GRADUATION_PAPER GP
+	    JOIN STUDENT ST ON GP.STU_ID = ST.STU_ID  
+	    JOIN PERSON P ON ST.STU_ID = P.ID       
+	    JOIN PERSON PR ON ST.PROFE_ID = PR.ID     
+	    WHERE 
+	        PR.ID = #{profId}                    
+	  
+	</select>
+	
+	<update id="updategraduationPaperToAccess">
+		UPDATE GRADUATION
+			SET COCO_CD='G001'
+		WHERE GDT_CD =#{gdtCd, jdbcType=NUMERIC}
+	</update>
+	
+</mapper>

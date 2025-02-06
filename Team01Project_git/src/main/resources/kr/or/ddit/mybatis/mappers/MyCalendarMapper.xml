@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="kr.or.ddit.yguniv.commons.mycalendar.dao.MyCalendarMapper">
+<sql id="columns">
+	PRS_ID					/*사용자아이디*/
+	, MY_CALENDAR_NO		/*일정번호*/
+	, MY_CALENDAR_TITLE		/*일정제목*/
+	, MY_CALENDAR_CONTENT	/*일정내용*/
+	, MY_CALENDAR_SD		/*일정시작일시*/
+	, MY_CALENDAR_ED		/*일정마감일시*/
+	, BOARD_NO				/*게시물번호*/
+	, MY_CALENDAR_YN		/*일정사용여부*/
+	, MY_CALENDAR_CD		/*일정구분 개인,학사,취업*/
+</sql>
+
+<select id="selectMyCalendarList" resultType="MyCalendarVO">
+	SELECT
+			PRS_ID					/*사용자아이디*/
+			, MY_CALENDAR_NO		/*일정번호*/
+			, MY_CALENDAR_TITLE		/*일정제목*/
+			, MY_CALENDAR_CONTENT	/*일정내용*/
+			, MY_CALENDAR_SD		/*일정시작일시*/
+			, MY_CALENDAR_ED		/*일정마감일시*/
+			, BOARD_NO				/*게시물번호*/
+			, MY_CALENDAR_YN		/*일정사용여부*/
+			, MY_CALENDAR_CD		/*일정구분 개인,학사,취업*/
+	FROM
+			MY_CALENDAR
+	WHERE
+			PRS_ID = #{prsId,jdbcType=VARCHAR}
+	AND
+			MY_CALENDAR_YN = 'Y'
+			
+</select>
+
+<select id="selectMyCalendarWithBoNo" resultType="MyCalendarVO">
+	SELECT
+			PRS_ID					/*사용자아이디*/
+			, MY_CALENDAR_NO		/*일정번호*/
+			, MY_CALENDAR_TITLE		/*일정제목*/
+			, MY_CALENDAR_CONTENT	/*일정내용*/
+			, MY_CALENDAR_SD		/*일정시작일시*/
+			, MY_CALENDAR_ED		/*일정마감일시*/
+			, BOARD_NO				/*게시물번호*/
+			, MY_CALENDAR_YN		/*일정사용여부*/
+			, MY_CALENDAR_CD		/*일정구분 개인,학사,취업*/
+			
+	FROM
+			MY_CALENDAR
+	WHERE 
+			PRS_ID = #{prsId,jdbcType=VARCHAR}
+	AND
+			MY_CALENDAR_CD = #{myCalendarCd,jdbcType=VARCHAR}
+	AND
+			BOARD_NO = #{boardNo,jdbcType=VARCHAR}
+	AND
+			MY_CALENDAR_YN = 'Y'
+</select>
+
+<select id="checkDuplicate" resultType="int">
+	SELECT
+			COUNT(MY_CALENDAR_NO)
+	FROM 
+			MY_CALENDAR
+	WHERE 
+			PRS_ID = #{prsId,jdbcType=VARCHAR}
+	AND
+			MY_CALENDAR_CD = #{myCalendarCd,jdbcType=VARCHAR}
+	AND
+			BOARD_NO = #{boardNo,jdbcType=VARCHAR}
+
+</select>
+
+
+<select id="selectMyCalendar" resultType="MyCalendarVO">
+	SELECT
+			PRS_ID					/*사용자아이디*/
+			, MY_CALENDAR_NO		/*일정번호*/
+			, MY_CALENDAR_TITLE		/*일정제목*/
+			, MY_CALENDAR_CONTENT	/*일정내용*/
+			, MY_CALENDAR_SD		/*일정시작일시*/
+			, MY_CALENDAR_ED		/*일정마감일시*/
+			, BOARD_NO				/*게시물번호*/
+			, MY_CALENDAR_YN		/*일정사용여부*/
+			, MY_CALENDAR_CD		/*일정구분 개인,학사,취업*/
+	FROM
+			MY_CALENDAR	
+	WHERE
+			MY_CALENDAR_NO = #{myCalendarNo,jdbcType=VARCHAR}
+	AND
+			MY_CALENDAR_YN = 'Y'
+</select>
+
+<insert id="insertMyCalendar">
+	<selectKey order="BEFORE" resultType="String" keyProperty="myCalendarNo">
+		SELECT SEQ_MY_CALENDAR.NEXTVAL FROM DUAL
+	</selectKey>
+	INSERT INTO MY_CALENDAR(
+		PRS_ID					/*사용자아이디*/
+		, MY_CALENDAR_NO		/*일정번호*/
+		, MY_CALENDAR_TITLE		/*일정제목*/
+		, MY_CALENDAR_CONTENT	/*일정내용*/
+		, MY_CALENDAR_SD		/*일정시작일시*/
+		, MY_CALENDAR_ED		/*일정마감일시*/
+		, BOARD_NO				/*게시물번호*/
+		, MY_CALENDAR_YN		/*일정사용여부*/
+		, MY_CALENDAR_CD		/*일정구분 개인,학사,취업*/
+
+	)VALUES(
+		 #{prsId,jdbcType=VARCHAR}
+		, #{myCalendarNo,jdbcType=VARCHAR}
+		, #{myCalendarTitle,jdbcType=VARCHAR}
+		, #{myCalendarContent,jdbcType=VARCHAR}
+		, #{myCalendarSd,jdbcType=VARCHAR}
+		, #{myCalendarEd,jdbcType=VARCHAR}
+		, #{boardNo,jdbcType=VARCHAR}
+		, 'Y'
+		, #{myCalendarCd,jdbcType=VARCHAR}
+	
+	)
+	
+
+</insert>
+
+<update id="updateMyCalendar">
+	UPDATE MY_CALENDAR
+	SET
+		 MY_CALENDAR_YN		= 'Y'
+	WHERE
+		MY_CALENDAR_NO = #{myCalendarNo,jdbcType=VARCHAR}
+</update>
+
+<delete id="deleteMyCalendar">
+	UPDATE MY_CALENDAR
+	SET
+		 MY_CALENDAR_YN		= 'N'
+	WHERE
+		MY_CALENDAR_NO = #{myCalendarNo,jdbcType=VARCHAR}
+
+</delete>
+
+
+</mapper>

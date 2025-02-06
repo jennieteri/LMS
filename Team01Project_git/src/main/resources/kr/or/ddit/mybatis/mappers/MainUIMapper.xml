@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.yguniv.mypage.dao.MainUIMapper">
+	<resultMap type="ActiveModuleVO" id="my" autoMapping="true">
+		<association property="moduleVO" javaType="ModuleVO" autoMapping="true"/>
+	</resultMap>
+	<select id="myModule" resultType="ActiveModuleVO">
+		SELECT
+			A.MOD_ID	/* 모듈아이디 */
+			, A.X	/* X좌표 */
+			, A.Y	/* Y좌표 */
+			, M.W	/* 넓이 */
+			, M.H	/* 높이 */
+			, M.CONTENT	/* HTML코드 */
+			, M.MOD_NM	/* 모듈명 */
+		FROM ACTIVE_MODULE A
+		INNER JOIN MODULE M ON(A.MOD_ID = M.MOD_ID)
+		WHERE A.ID = #{id, jdbcType=VARCHAR}
+		ORDER BY A.X, A.Y
+	</select>
+
+	<resultMap type="LectureVO" id="lecture" autoMapping="true">
+		<id property="lectNo" column="LECT_NO"/>
+		<association property="professorVO" javaType="ProfessorVO" autoMapping="true"/>
+		<association property="subjectVO" javaType="SubjectVO">
+			<association property="subFicdCdCommonCodeVO" javaType="CommonCodeVO">
+				<result property="cocoStts" column="SUB_FICD_NM"/>
+			</association>
+		</association>
+		<collection property="scheduleVO" ofType="ScheduleVO" select="kr.or.ddit.yguniv.lecture.dao.LectureMapper.getSchedule" column="LECT_NO"/>
+	</resultMap>
+	<select id="schedule" resultMap="lecture">
+			SELECT
+				L.LECT_NO	/* 강의번호 */
+				, L.LECT_NM	/* 강의명 */
+				, (SELECT FN_COCO_STTS(S.SUB_FICD_CD) FROM DUAL) AS SUB_FICD_NM	/* 과목분류명 */
+				, L.LECT_ONLINE_YN	/* 온라인수업여부 */
+				, L.LECT_STATUS_CD	/* 강의상태코드 */
+				, L.LECT_SCORE	/* 학점 */
+				, P.NM	/* 교수명 */
+			FROM LECTURE L
+			INNER JOIN LECTURE_CART C ON(L.LECT_NO = C.LECT_NO)
+			INNER JOIN PERSON P ON(L.PROFE_ID = P.ID)
+			INNER JOIN SUBJECT S ON(L.SUB_NO = S.SUB_NO)
+			WHERE C.STU_ID = #{id, jdbcType=VARCHAR}
+		UNION ALL
+			SELECT
+				L.LECT_NO	/* 강의번호 */
+				, L.LECT_NM	/* 강의명 */
+				, (SELECT FN_COCO_STTS(S.SUB_FICD_CD) FROM DUAL) AS SUB_FICD_NM	/* 과목분류명 */
+				, L.LECT_ONLINE_YN	/* 온라인수업여부 */
+				, L.LECT_STATUS_CD	/* 강의상태코드 */
+				, L.LECT_SCORE	/* 학점 */
+				, P.NM	/* 교수명 */
+			FROM LECTURE L
+			INNER JOIN ATTENDEE A ON(L.LECT_NO = A.LECT_NO)
+			INNER JOIN PERSON P ON(L.PROFE_ID = P.ID)
+			INNER JOIN SUBJECT S ON(L.SUB_NO = S.SUB_NO)
+			WHERE A.STU_ID = #{id, jdbcType=VARCHAR}
+			AND L.LECT_STATUS_CD = 'L03'
+	</select>
+	<delete id="deleteModule">
+		DELETE FROM ACTIVE_MODULE
+		WHERE ID = #{id, jdbcType=VARCHAR}
+	</delete>
+	<insert id="saveModule">
+		INSERT ALL 
+		<foreach collection="modList" item="mod" separator=" ">
+			INTO ACTIVE_MODULE(
+				ID
+				, MOD_ID
+				, X
+				, Y
+			) VALUES (
+				#{id, jdbcType=VARCHAR}
+				, #{mod.modId, jdbcType=VARCHAR}
+				, #{mod.x, jdbcType=NUMERIC}
+				, #{mod.y, jdbcType=NUMERIC}
+			)
+		</foreach>
+		SELECT * FROM DUAL
+	</insert>
+	
+	<select id="moduleList" resultType="ModuleVO">
+		SELECT
+			MOD_ID	/* 모듈아이디 */
+			, W	/* 넓이 */
+			, H	/* 높이 */
+			, CONTENT	/* 응답JSP주소 */
+			, MOD_NM	/* 모듈명 */
+			, ICON	/* 아이콘 */
+		FROM MODULE
+	</select>
+</mapper>

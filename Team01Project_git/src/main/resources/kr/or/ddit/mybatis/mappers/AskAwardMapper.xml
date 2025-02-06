@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.yguniv.askAward.dao.AskAwardMapper">
+
+
+<resultMap type="AwardAskVO" id="boardMap" autoMapping="true">
+		<id property="shapDocNo" column="SHAP_DOC_NO" jdbcType="VARCHAR"/>
+		<result property="atchFileId" column="ATCH_FILE_ID" />
+		<association property="atchFile" column="ATCH_FILE_ID"
+			select ="kr.or.ddit.yguniv.atch.dao.AtchFileMapper.selectAtchFileEnable"/>
+	</resultMap>
+
+	<!-- 검색 조건 -->
+	<sql id="searchFrag">
+		<where>
+			<if
+				test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+				<choose>
+					<when test="simpleCondition.searchType eq 'title'">
+						AND INSTR(SHAP_ACC_CD, #{simpleCondition.searchWord}) > 0
+					</when>
+					<when test="simpleCondition.searchType eq 'writer'">
+						AND INSTR(STU_ID, #{simpleCondition.searchWord}) > 0
+					</when>
+				
+					
+					<otherwise>
+						AND(INSTR(SHAP_ACC_CD, #{simpleCondition.searchWord}) > 0
+						OR INSTR(STU_ID, #{simpleCondition.searchWord}) > 0
+						)
+						
+					</otherwise>
+				</choose>
+			</if>
+		</where>
+	</sql>
+	
+<select id="selectTotalRecord" resultType="int">
+ SELECT COUNT(SHAP_DOC_NO) FROM SCHOLARSHIP_APPLICATION
+ <include refid="searchFrag"/>
+</select>
+
+
+<resultMap type="AwardAskVO" id="awardAsk" autoMapping="true">
+		<id property="shapDocNo" column="SHAP_DOC_NO"/>
+			<result property="atchFileId" column="ATCH_FILE_ID" />
+		<association property="atchFile" column="ATCH_FILE_ID"
+			select ="kr.or.ddit.yguniv.atch.dao.AtchFileMapper.selectAtchFileEnable"/>
+		 <association property="commonCodeVO" javaType="CommonCodeVO" autoMapping="true">
+    		<id property="cocoCd" column="SHAP_ACC_CD"/> <!-- 공통 코드 -->
+    		<result property="cocoStts" column="COCO_STTS"/> <!-- 상태 -->
+		</association>
+
+		<association property="studentVO" javaType="StudentVO" autoMapping="true">
+			<result property="nm" column="STU_NM"/>
+			<result property="brdt" column="STU_BRDT"/> 
+			<result property="rdnmadr" column="STU_RDNMADR"/> 
+			<result property="zip" column="STU_ZIP"/> 
+			<result property="daddr" column="STU_DADDR"/> 
+			<result property="mbtlnum" column="STU_MBTLNUM"/> 
+			<result property="eml" column="STU_EML"/> 
+			<result property="sexdstnCd" column="STU_SEXDSTNCD"/> 
+		</association>
+		<association property="professorVO" javaType="ProfessorVO" autoMapping="true">
+			<id property="id" column="PROFE_ID"/>
+			<result property="nm" column="PROFE_NM"/>
+		</association>
+		<association property="awardVO" javaType="AwardVO" autoMapping="true">
+			<result property="awardNm" column="AWARD_NM"/>
+			<result property="awardType" column="AWARD_TYPE"/>
+		</association>	
+		
+
+	</resultMap>
+
+	<!-- 교직원이 보는 학생이랑 교직원 신청한 신청 내역 리스 -->
+
+<select id="selectAwardAskList" resultMap="awardAsk">
+
+
+		SELECT B.*
+		FROM
+		(
+			SELECT ROWNUM RNUM, A.*
+			 FROM (
+			            SELECT 
+			                SA.SHAP_DOC_NO,
+			                SA.SEMSTR_NO,
+			                SA.STU_ID,
+			                SA.PROFE_ID,
+			                SA.SHAP_RECOMMEND,
+			               	P.NM AS STU_NM, 
+			                SA.AWARD_CD,
+			                A.AWARD_TYPE,
+			                A.AWARD_NM AS AWARD_NM,
+			                SA.SHAP_RCPT_DATE,
+			                SA.SHAP_CHC_DATE,
+			                C.COCO_STTS AS COCO_STTS,
+			                SA.SHAP_NO_REASON,
+			                SA.ATCH_FILE_ID
+			            FROM SCHOLARSHIP_APPLICATION SA
+			            INNER JOIN PERSON P ON (SA.STU_ID = P.ID)
+			            INNER JOIN AWARD A ON (SA.AWARD_CD = A.AWARD_CD)
+			            INNER JOIN COMMON_CODE C ON(SA.SHAP_ACC_CD = C.COCO_CD)
+			            <include refid="searchFrag" />
+			            ORDER BY SA.SHAP_DOC_NO DESC
+			        ) A
+		)B
+
+<![CDATA[
+		WHERE RNUM >= #{startRow} AND RNUM <= #{endRow}
+		]]>
+
+</select>
+
+
+
+ <select id="selectList" resultType="AwardAskVO">
+		SELECT A.*, ROWNUM RNUM 
+		FROM 
+		( 
+			SELECT
+	SEMSTR_NO
+  ,STU_ID
+  ,AWARD_CD
+  ,SHAP_RCPT_DATE
+  ,SHAP_CHC_DATE
+  ,PROFE_ID
+  ,SHAP_ACC_CD
+  ,SHAP_NO_REASON
+  ,SHAP_DOC_NO
+  ,ATCH_FILE_ID
+  ,SHAP_RECOMMEND
+				
+			FROM SCHOLARSHIP_APPLICATION ORDER BY SHAP_DOC_NO DESC 
+		) A
+	</select> 
+
+
+
+<!--교직원이 보는 신청한 신청서 상세조회 학생이랑 같네...  -->
+
+<select id="selectAskAward" resultMap="awardAsk">
+
+
+	SELECT 
+		SA.SEMSTR_NO
+	   ,SA.STU_ID
+	   ,P.NM AS STU_NM
+	   ,P.BRDT AS STU_BRDT
+	   ,P.RDNMADR AS STU_RDNMADR
+	   ,P.ZIP AS STU_ZIP
+	   ,P.DADDR AS STU_DADDR
+	   ,P.MBTLNUM AS STU_MBTLNUM
+	   ,P.EML AS STU_EML
+	   ,CASE P.SEXDSTN_CD 
+		   WHEN 'M' THEN '남'
+		   WHEN 'W' THEN '여'
+		   ELSE '알 수 없음'
+		   END AS STU_SEXDSTNCD 
+	   ,SA.AWARD_CD
+	   ,A.AWARD_NM AS AWARD_NM
+	   ,SA.SHAP_RCPT_DATE
+	   ,SA.SHAP_CHC_DATE
+	   ,SA.PROFE_ID
+	   ,SA.SHAP_RECOMMEND
+	   ,C.COCO_STTS AS COCO_STTS
+	   ,SA.SHAP_NO_REASON
+	   ,SA.SHAP_DOC_NO
+	   ,SA.ATCH_FILE_ID
+
+		FROM SCHOLARSHIP_APPLICATION SA
+		INNER JOIN PERSON P ON (SA.STU_ID = P.ID)
+		INNER JOIN AWARD A ON (SA.AWARD_CD = A.AWARD_CD)
+		INNER JOIN COMMON_CODE C ON(SA.SHAP_ACC_CD = C.COCO_CD)
+		WHERE SHAP_DOC_NO = #{shapDocNo, jdbcType= VARCHAR}
+
+</select>
+
+
+<!-- 학생이 신청하는 장학금 신청폼 작성 -->
+
+<insert id="insertAskAward" parameterType="AwardAskVO">
+
+<selectKey order="BEFORE" keyProperty="shapDocNo"
+			resultType="string">
+			SELECT #{semstrNo} ||
+			LPAD( NVL( TO_NUMBER(
+			SUBSTR(MAX(SHAP_DOC_NO), 7) ), 0) + 1, 4, '0')
+			FROM SCHOLARSHIP_APPLICATION
+			WHERE SEMSTR_NO =
+			#{semstrNo}
+		</selectKey>
+
+
+INSERT INTO scholarship_application (
+    SEMSTR_NO <!-- 학기번호-->
+   ,STU_ID <!-- 학번--> 
+   ,AWARD_CD <!-- 장학금 코드-->
+   ,SHAP_RCPT_DATE <!-- 접수 일시-->
+   ,SHAP_ACC_CD <!-- 장학금 진행 코드-->
+   ,SHAP_DOC_NO <!-- 신청 서류번호-->
+   ,ATCH_FILE_ID <!-- 서류 번호 -->
+
+) VALUES ( <!-- selectKey를 2번 사용할 수 없어서 서브쿼리로 해벌미  -->
+ #{semstrNo,jdbcType= VARCHAR}
+,#{stuId ,jdbcType=VARCHAR}
+,#{awardCd ,jdbcType=VARCHAR}
+,SYSDATE
+,'A02'
+,#{shapDocNo,jdbcType=VARCHAR}
+,#{atchFileId ,jdbcType=NUMERIC}
+
+    
+)
+
+
+
+</insert>
+<!-- 학생이 신청한 신청현황  -->
+
+<select id="selectStudentAwardAsk" resultMap="awardAsk">
+
+SELECT 
+
+   SA.SEMSTR_NO
+  ,SA.AWARD_CD
+  ,A.AWARD_NM AS AWARD_NM
+  ,SHAP_RCPT_DATE
+  ,SHAP_CHC_DATE
+  ,C.COCO_STTS AS COCO_STTS
+  ,SHAP_NO_REASON
+  ,SHAP_DOC_NO
+  ,ATCH_FILE_ID
+
+FROM SCHOLARSHIP_APPLICATION SA
+INNER JOIN AWARD A ON (SA.AWARD_CD = A.AWARD_CD)
+INNER JOIN COMMON_CODE C ON(SA.SHAP_ACC_CD = C.COCO_CD)
+
+WHERE STU_ID = #{stuId, jdbcType= VARCHAR}
+
+
+</select>
+<!-- 신청서 수정 -->
+		<update id="updateAskAward">
+		UPDATE SCHOLARSHIP_APPLICATION 
+		SET 
+					SEMSTR_NO = #{semstrNo,jdbcType=VARCHAR}
+				  ,AWARD_CD = #{awardCd,jdbcType=VARCHAR}
+				 <if test="atchFileId neq null">
+ 					 ,ATCH_FILE_ID = #{atchFileId,jdbcType=NUMERIC}
+				</if>
+		
+		
+		WHERE SHAP_DOC_NO =
+					#{shapDocNo,jdbcType= VARCHAR}
+		
+		</update>
+
+		
+<delete id="deleteAskAward">
+DELETE FROM SCHOLARSHIP_APPLICATION
+WHERE SHAP_DOC_NO = #{shapDocNo, jdbcType= VARCHAR}
+
+
+
+</delete>
+
+
+<update id="updateStatus">
+    UPDATE SCHOLARSHIP_APPLICATION
+    SET SHAP_ACC_CD = #{cocoStts},
+        SHAP_NO_REASON = CASE
+                          WHEN #{cocoStts} = 'A04' THEN #{shapNoReason, jdbcType=VARCHAR}
+                          ELSE NULL
+                         END,
+        SHAP_CHC_DATE = CASE
+                          WHEN #{cocoStts} IN ('A03', 'A04') THEN SYSDATE
+                          ELSE NULL
+                        END
+    WHERE SHAP_DOC_NO = #{shapDocNo}
+</update>
+
+
+
+
+
+
+
+
+
+</mapper>

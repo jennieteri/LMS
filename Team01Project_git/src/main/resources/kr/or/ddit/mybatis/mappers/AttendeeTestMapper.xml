@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="kr.or.ddit.yguniv.attendeetest.dao.AttendeeTestMapper">
+	
+	<resultMap type="TestVO" id="testPageMap">
+		<association property="lectVO" autoMapping="true" javaType="LectureVO">
+			<result property="lectNm" column="LECT_NM"/>
+		</association>
+	</resultMap>
+	
+<select id="getTestPage" resultType="TestVO">
+SELECT /*하나의 강의에 등록된 시험을 들고오는 페이지. 리스트 형태로 중간-기말 2개*/
+    t.test_no 			/*시험 번호			*/
+    , t.lect_no         /*강의 번호			*/
+    , t.test_se         /*시험 구분			*/
+    , t.test_cd         /*시험 상태			*/
+    , (select coco_stts from common_code where coco_cd = t.test_cd) as testCdNm         /*시험 상태			*/
+    , t.test_online_yn  /*온라인 시험 유무		*/
+    , t.test_schdl      /*시험 일시			*/
+    , t.test_dt         /*시작시간				*/
+    , t.test_et         /*종료시간				*/
+    , t.croom_cd        /*강의실				*/
+    , a.lect_nm
+FROM
+    test t inner join lecture a on (t.lect_no = a.lect_no)
+WHERE
+    a.lect_no = #{lectNo}
+    -- and t.test_cd='OPEN'
+</select>
+
+<select id="getOneTestData" resultType="TestVO">
+SELECT /*하나의 강의에 등록된 시험을 들고오는 페이지. 리스트 형태로 중간-기말 2개*/
+    t.test_no 			/*시험 번호			*/
+    , t.lect_no         /*강의 번호			*/
+    , t.test_se         /*시험 구분			*/
+    , t.test_cd         /*시험 상태			*/
+    , t.test_online_yn  /*온라인 시험 유무		*/
+    , t.test_schdl      /*시험 일시			*/
+    , t.test_dt         /*시작시간				*/
+    , t.test_et         /*종료시간				*/
+    , t.croom_cd        /*강의실				*/
+    , a.lect_nm
+FROM
+    test t inner join lecture a on (t.lect_no = a.lect_no)
+
+WHERE
+    a.lect_no = #{lectNo}
+    and t.test_se=#{testSe}
+</select>
+
+
+<select id="getLectureEvaluationStandardList" resultType="LectureEvaluationStandardVO">
+	    
+select 
+    lect_no
+    , evl_stdr_cd
+    , rate
+    
+from lecture_evaluation_standard
+where lect_no =#{lectNo} 
+</select>
+
+
+
+
+
+<select id="getTestOne" resultType="TestVO">
+SELECT
+   test_no
+    , lect_no
+    , test_se
+    , test_cd
+    , test_online_yn
+    , test_schdl
+    , test_dt
+    , test_et
+    , croom_cd
+FROM
+    test t 
+WHERE
+    test_no=#{testNo}
+</select>
+	
+<insert id="createRecord">
+INSERT INTO examination_record ( /*학생 하나의 시험 기록 하나 생성*/
+    lect_no,
+    stu_id,
+    test_no,
+    examin_date
+) VALUES (
+    #{lectNo},
+    #{stuId},
+    #{testNo},
+    (SELECT TO_CHAR(SYSDATE, 'YYYYMMDD') FROM dual)
+)
+</insert>
+<select id="checkRecord" resultType="String">
+select 
+    lect_no
+from 
+    examination_record
+where 
+    test_no=#{testNo} and stu_id=#{stuId}
+</select>
+
+	
+<select id="getExaminationRecord" resultType="ExaminationRecordVO">
+select 
+	lect_no
+	, stu_id
+	, test_no
+	, examin_date
+	, test_score
+from 
+	examination_record
+where 
+	lect_no=#{lectNo} and stu_id=#{stuId} and test_no = #{testNo}
+</select>	
+
+<insert id="createQuestionAnswer" parameterType="QuestionAnswerVO">
+
+INSERT INTO question_answer (
+    lect_no,
+    stu_id,
+    test_no,
+    que_no,
+    que_answer,
+    ques_yn,
+    ques_score
+) VALUES (
+    #{lectNo,jdbcType=VARCHAR}
+    , #{stuId,jdbcType=VARCHAR}
+    , #{testNo,jdbcType=VARCHAR}
+    , #{queNo,jdbcType=VARCHAR}
+    , #{queAnswer,jdbcType=VARCHAR}
+    , #{quesYn,jdbcType=CHAR}
+    , #{quesScore,jdbcType=VARCHAR}
+)
+</insert>
+
+	
+<update id="updateExaminationRecord" parameterType="ExaminationRecordVO">
+
+UPDATE examination_record
+
+SET
+    test_score = #{testScore}
+WHERE
+         lect_no = #{lectNo}
+     AND stu_id = #{stuId}
+     AND test_no = #{testNo}
+</update>
+
+<update id="professorUpdateAttendeeScore" parameterType="QuestionAnswerVO">
+ UPDATE question_answer
+  SET
+    ques_yn = 'Y',
+    ques_score = #{quesScore}
+  WHERE
+    lect_no = #{lectNo}
+    AND stu_id = #{stuId}
+    AND test_no = #{testNo}
+    AND que_no = #{queNo}
+</update>
+
+
+
+
+
+
+<resultMap id="ProfessorTestPageMap" type="TestVO">
+    <!-- TestVO 기본 필드 매핑 -->
+    <result property="testNo" column="TEST_NO"/>
+    <result property="lectNo" column="LECT_NO"/>
+    <result property="testSe" column="TEST_SE"/>
+    <result property="testEt" column="TEST_ET"/>
+    <result property="testDt" column="TEST_DT"/>
+    <result property="testSchdl" column="TEST_Schdl"/>
+    
+    <!-- PersonVO (학생 정보) 매핑 -->
+    <association property="personVO" javaType="PersonVO">
+        <result property="id" column="STU_ID"/>
+        <result property="nm" column="NM"/>
+    </association>
+    <association property="lectVO" javaType="LectureVO">
+        <result property="lectNm" column="LECT_NM"/>
+    </association>
+    
+    <!-- ExaminationRecordVO (응시 기록) 매핑 -->
+    <collection property="examList" ofType="ExaminationRecordVO">
+        <result property="stuId" column="STU_ID"/>
+        <result property="lectNo" column="LECT_NO"/>
+        <result property="testNo" column="TEST_NO"/>
+
+        <!-- QuestionAnswerVO (제출 답안) 중첩 매핑 -->
+        <collection property="questionAnswerList" ofType="QuestionAnswerVO">
+            <result property="queNo" column="QUE_NO"/>
+            <result property="queAnswer" column="QUE_ANSWER"/>
+            <result property="quesScore" column="QUES_SCORE"/>
+        </collection>
+    </collection>
+    
+    <!-- QuestionVO (문제 정보) 매핑 -->
+    <collection property="questionVO" ofType="QuestionVO">
+        <result property="queNo" column="QUE_NO"/>
+        <result property="testNo" column="TEST_NO"/>
+        <result property="queType" column="QUE_TYPE"/>
+        <result property="queDescr" column="QUE_DESCR"/>
+        <result property="queScore" column="QUE_SCORE"/>
+    </collection>
+</resultMap>
+
+
+<select id="getProfessorTestPage" resultMap="ProfessorTestPageMap">
+SELECT
+    T.TEST_NO
+    , T.LECT_NO
+    , T.TEST_SE
+    , T.TEST_DT
+    , T.TEST_ET
+    , T.TEST_SCHDL
+    , EX.STU_ID
+    , P.NM
+    , QA.QUE_NO
+    , QA.QUE_ANSWER
+    , QA.QUES_SCORE
+    , Q.QUE_TYPE
+    , Q.QUE_DESCR
+    , Q.QUE_SCORE
+    , L.LECT_NM
+FROM 
+    TEST T
+        INNER JOIN LECTURE L ON T.LECT_NO = L.LECT_NO
+        INNER JOIN		EXAMINATION_RECORD EX ON T.TEST_NO = EX.TEST_NO  AND T.LECT_NO = EX.LECT_NO
+        LEFT OUTER JOIN QUESTION_ANSWER QA ON EX.STU_ID = QA.STU_ID   AND EX.TEST_NO = QA.TEST_NO
+        INNER JOIN 		QUESTION Q ON QA.QUE_NO = Q.QUE_NO AND Q.TEST_NO = QA.TEST_NO
+        INNER JOIN 		PERSON P ON QA.STU_ID = P.ID 
+WHERE 
+    T.TEST_NO = #{testNo}
+    AND Q.QUE_TYPE='서술형'
+   -- AND qa.ques_score='0' 
+</select>
+<select id="checkLongStringQuestion" resultMap="ProfessorTestPageMap">
+SELECT
+    T.TEST_NO
+    , T.LECT_NO
+    , T.TEST_SE
+    , T.TEST_DT
+    , T.TEST_ET
+    , T.TEST_SCHDL
+    , EX.STU_ID
+    , P.NM
+    , QA.QUE_NO
+    , QA.QUE_ANSWER
+    , QA.QUES_SCORE
+    , Q.QUE_TYPE
+    , Q.QUE_DESCR
+    , Q.QUE_SCORE
+    , L.LECT_NM
+FROM 
+    TEST T
+        INNER JOIN LECTURE L ON T.LECT_NO = L.LECT_NO
+        INNER JOIN		EXAMINATION_RECORD EX ON T.TEST_NO = EX.TEST_NO  AND T.LECT_NO = EX.LECT_NO
+        LEFT OUTER JOIN QUESTION_ANSWER QA ON EX.STU_ID = QA.STU_ID   AND EX.TEST_NO = QA.TEST_NO
+        INNER JOIN 		QUESTION Q ON QA.QUE_NO = Q.QUE_NO AND Q.TEST_NO = QA.TEST_NO
+        INNER JOIN 		PERSON P ON QA.STU_ID = P.ID 
+WHERE 
+    L.LECT_NO = #{lectNo}
+    AND Q.QUE_TYPE='서술형'
+   -- AND qa.ques_score='0' 
+</select>
+
+<select id="getQuestionScore" parameterType="String" resultType="String">
+select que_score
+from question
+where test_no=#{testNo} and que_no=#{queNo}
+</select>
+
+
+
+
+
+</mapper>

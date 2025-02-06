@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.yguniv.studentCard.dao.StudentCardMapper">
+
+
+
+
+<!-- 검색  -->
+
+<sql id="searchFrag">
+    <where>
+        <if test="simpleCondition.searchWord != null and simpleCondition.searchWord != ''">
+            <choose>
+                <when test="simpleCondition.searchType == 'writer'">
+                    INSTR(STU_ID, #{simpleCondition.searchWord}) > 0
+                </when>
+                <when test="simpleCondition.searchType == 'title'">
+                    INSTR(C.COCO_STTS, #{simpleCondition.searchWord}) > 0
+                </when>
+                <otherwise>
+                    INSTR(STU_ID, #{simpleCondition.searchWord}) > 0 
+                    OR INSTR(STU_CARD_CD, #{simpleCondition.searchWord}) > 0
+                </otherwise>
+            </choose>
+        </if>
+    </where>
+</sql>
+
+
+	<select id="selectTotalRecord" resultType="int">
+		SELECT COUNT(STU_ID) FROM STUDENTCARD
+		<include refid="searchFrag" />
+	</select>
+
+
+	<resultMap type="StudentCardVO" id="studentCard" autoMapping="true">
+    <id property="stuId" column="STU_ID" />
+    
+    <!-- 공통 코드 매핑 -->
+    <association property="commonCodeVO" javaType="CommonCodeVO" autoMapping="true">
+        <id property="cocoCd" column="COCO_CD" /> <!-- 공통 코드 -->
+        <result property="cocoStts" column="COCO_STTS" /> <!-- 상태 -->
+    </association>
+
+    <!-- 학생 정보 매핑 -->
+    <association property="studentVO" javaType="StudentVO" autoMapping="true">
+        <result property="nm" column="STU_NM" />
+        <result property="brdt" column="STU_BRDT" />
+        <result property="rdnmadr" column="STU_RDNMADR" />
+        <result property="zip" column="STU_ZIP" />
+        <result property="daddr" column="STU_DADDR" />
+        <result property="mbtlnum" column="STU_MBTLNUM" />
+        <result property="eml" column="STU_EML" />
+        <result property="sexdstnCd" column="STU_SEXDSTNCD" />
+        <result property="proflPhoto" column="PROFL_PHOTO" jdbcType="BLOB" />
+    </association>
+
+    <!-- 학과 정보 매핑 -->
+    <association property="departmentVO" javaType="DepartmentVO" autoMapping="true">
+        <result property="deptNo" column="DEPT_NO" /> <!-- 학과 번호 -->
+        <result property="deptNm" column="DEPT_NM" /> <!-- 학과 이름 -->
+    </association>
+</resultMap>
+
+
+		<select id="studentCardList" resultMap="studentCard">
+
+			SELECT B.*
+			FROM
+			(
+			    SELECT ROWNUM RNUM, A.*
+			    FROM (
+			        SELECT 
+			            S.STU_ID,
+			            S.STU_CARD_DATE,
+			            C.COCO_STTS AS COCO_STTS,
+			            P.NM AS STU_NM,
+			            D.DEPT_NM AS DEPT_NM  
+			        FROM STUDENTCARD S
+			        INNER JOIN COMMON_CODE C ON(S.COCO_CD = C.COCO_CD)
+			        INNER JOIN PERSON P ON (S.STU_ID = P.ID)
+			        INNER JOIN STUDENT ST ON (S.STU_ID = ST.STU_ID) 
+			        INNER JOIN DEPARTMENT D ON (ST.DEPT_CD = D.DEPT_NO)  
+			        
+			        <include refid="searchFrag" />
+			        
+			        ORDER BY
+			            CASE
+			                WHEN C.COCO_STTS = '요청' THEN 1
+			                WHEN C.COCO_STTS = '발급' THEN 2
+			                WHEN C.COCO_STTS = '완료' THEN 3
+			                ELSE 4
+			            END,
+			            S.STU_ID DESC 
+			    ) A
+			) B  
+			<![CDATA[
+			    WHERE RNUM >= #{startRow} AND RNUM <= #{endRow}
+			]]>
+
+		</select>
+
+<select id="selectStudentCard" resultMap="studentCard">
+
+		SELECT
+		    S.STU_ID
+		    ,S.STU_CARD_DATE
+		    ,C.COCO_STTS AS COCO_STTS
+		    ,P.NM AS STU_NM
+	   		,P.BRDT AS STU_BRDT
+	   		,P.RDNMADR AS STU_RDNMADR
+	   		,P.ZIP AS STU_ZIP
+		   ,P.DADDR AS STU_DADDR
+		   ,P.MBTLNUM AS STU_MBTLNUM
+		   ,P.EML AS STU_EML
+		   ,P.PROFL_PHOTO AS PROFL_PHOTO
+		   ,CASE P.SEXDSTN_CD 
+			   WHEN 'M' THEN '남'
+			   WHEN 'W' THEN '여'
+			   ELSE '알 수 없음'
+			   END AS STU_SEXDSTNCD 
+		FROM STUDENTCARD S
+		INNER JOIN COMMON_CODE C ON(S.COCO_CD = C.COCO_CD)
+		INNER JOIN PERSON P ON (S.STU_ID = P.ID)
+		WHERE STU_ID = #{stuId, jdbcType = VARCHAR}
+
+
+</select>
+
+<update id="updateStatus">
+    UPDATE STUDENTCARD
+    SET COCO_CD = #{nextStatus}
+    WHERE STU_ID = #{stuId}
+</update>
+
+<!--중복  -->
+<select id="checkCard" resultType="int">
+SELECT COUNT(*)
+FROM STUDENTCARD
+WHERE STU_ID =#{stuId}
+
+</select>
+
+<insert id="createStudentCard" parameterType="StudentCardVO">
+
+INSERT INTO STUDENTCARD (
+    STU_ID,
+    STU_CARD_DATE,
+    COCO_CD
+) VALUES (
+   #{stuId}
+	,SYSDATE
+	,'ST01'
+)
+</insert>
+
+
+</mapper>

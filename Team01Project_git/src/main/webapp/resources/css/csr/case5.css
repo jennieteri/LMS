@@ -1,0 +1,9 @@
+@charset "UTF-8";
+
+body{
+	background-image: url("../../images/cat6.png");
+}
+#image-area,#movie-area{
+	width: 50%;
+	height: 200px;	
+}

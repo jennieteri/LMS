@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.yguniv.lecture.dao.AttendanceTimerMapper">
+	<resultMap type="AttendanceVO" id="attendanceVO" autoMapping="true">
+		<association property="orderVO" javaType="OrderLectureDataVO" autoMapping="true"/>
+	</resultMap>
+	<select id="selectViewTime" resultMap="attendanceVO">
+		SELECT A.STU_ID
+		    , A.ATND_IDNTY
+		    , O.SECT_IDNTY
+		    , CASE 
+		        WHEN SYSDATE BETWEEN TO_DATE(O.SECT_DT, 'YYYYMMDD') AND TO_DATE(O.SECT_ET, 'YYYYMMDD')+1 
+		        THEN 1 ELSE 0 
+		    END AS UPDATE_POSSIBLE
+		FROM ORDER_LECTURE_DATA O
+		LEFT OUTER JOIN ATTENDANCE A ON(A.LECT_NO = O.LECT_NO AND A.LECT_ORDER = O.LECT_ORDER 
+															AND A.STU_ID = #{stuId, jdbcType=VARCHAR})
+		WHERE O.LECT_NO = #{lectNo, jdbcType=VARCHAR}
+		    AND O.LECT_ORDER = #{lectOrder, jdbcType=NUMERIC}
+	</select>
+	<insert id="mergeIntoViewTime">
+		MERGE INTO ATTENDANCE A
+		USING DUAL 
+		ON (A.LECT_NO = #{lectNo, jdbcType=VARCHAR}
+			AND A.LECT_ORDER = #{lectOrder, jdbcType=NUMERIC}
+			AND A.STU_ID = #{stuId, jdbcType=VARCHAR})
+		WHEN MATCHED THEN
+			UPDATE SET 
+				A.ATND_IDNTY = #{atndIdnty, jdbcType=VARCHAR}
+				, A.ATND_CD = #{atndCd, jdbcType=VARCHAR}
+		WHEN NOT MATCHED THEN
+			INSERT (
+				STU_ID
+				, WEEK_CD
+				, LECT_ORDER
+				, LECT_NO
+				, ATND_CD
+				, ATND_IDNTY
+			)VALUES(
+				#{stuId, jdbcType=VARCHAR}
+				, #{weekCd, jdbcType=VARCHAR}
+				, #{lectOrder, jdbcType=NUMERIC}
+				, #{lectNo, jdbcType=VARCHAR}
+				, #{atndCd, jdbcType=VARCHAR}
+				, #{atndIdnty, jdbcType=VARCHAR}
+			)
+	</insert>
+</mapper>

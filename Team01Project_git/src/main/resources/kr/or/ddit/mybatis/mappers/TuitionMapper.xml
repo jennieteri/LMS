@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.yguniv.tuition.dao.TuitionMapper">
+	<select id="selectTotalRecord" resultType="int">
+		SELECT COUNT(*)
+		FROM TUITION
+	</select>
+	<select id="selectPagingTotalRecord" resultType="int">
+		SELECT COUNT(*)
+		FROM TUITION
+		<where>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.semstrNo)">
+				AND SEMSTR_NO = #{detailCondition.semstrNo, jdbcType=VARCHAR}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.stuId)">
+				AND STU_ID = #{detailCondition.stuId, jdbcType=VARCHAR}
+			</if>
+			<if test="detailCondition.studentVO neq null">
+				<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.studentVO.nm)">
+					AND INSTR(NM, #{detailCondition.studentVO.nm, jdbcType=VARCHAR}) > 0
+				</if>
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.tuitStatusCd)">
+				AND TUIT_STATUS_CD = #{detailCondition.tuitStatusCd, jdbcType=VARCHAR}
+			</if>
+		</where>
+	</select>
+	<resultMap type="TuitionVO" id="tuition" autoMapping="true">
+		<association property="studentVO" javaType="StudentVO" autoMapping="true">
+			<association property="departmentVO" javaType="DepartmentVO" autoMapping="true"/>
+			<association property="gradeCocoVO" javaType="CommonCodeVO">
+				<result property="cocoStts" column="GRADE_NM"/>
+			</association>
+		</association>
+		<association property="commonCodeVO" javaType="CommonCodeVO" autoMapping="true"/>
+		<association property="awardVO" javaType="AwardVO" autoMapping="true"/>
+		<association property="regularRegist" javaType="NoticeBoardVO">
+			<result property="ntcDt" column="RN_NTC_DT"/>
+			<result property="ntcEt" column="RN_NTC_ET"/>
+		</association>
+		<association property="additionalRegist" javaType="NoticeBoardVO">
+			<result property="ntcDt" column="AN_NTC_DT"/>
+			<result property="ntcEt" column="AN_NTC_ET"/>
+		</association>
+	</resultMap>
+	<select id="selectTuitionList" resultMap="tuition">
+		SELECT B.*
+		FROM (
+			SELECT A.*, ROWNUM AS RNUM
+			FROM (
+				SELECT
+					SEMSTR_NO	/* 학기번호 */
+					, STU_ID	/* 학번 */
+					, (SELECT NM FROM PERSON WHERE ID = STU_ID) AS NM	/* 이름 */
+					, TUIT_STATUS_CD	/* 납부상태코드 */
+					, (SELECT FN_COCO_STTS(TUIT_STATUS_CD) FROM DUAL) AS COCO_STTS	/* 납부상태명 */
+					, TUIT_PAY_PERIOD	/* 납부일자 */
+				FROM TUITION
+				<where>
+					<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.semstrNo)">
+						AND SEMSTR_NO = #{detailCondition.semstrNo, jdbcType=VARCHAR}
+					</if>
+					<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.stuId)">
+						AND STU_ID = #{detailCondition.stuId, jdbcType=VARCHAR}
+					</if>
+					<if test="detailCondition.studentVO neq null">
+						<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.studentVO.nm)">
+							AND INSTR(NM, #{detailCondition.studentVO.nm, jdbcType=VARCHAR}) > 0
+						</if>
+					</if>
+					<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.tuitStatusCd)">
+						AND TUIT_STATUS_CD = #{detailCondition.tuitStatusCd, jdbcType=VARCHAR}
+					</if>
+				</where>
+				<foreach collection="orderList" item="order" separator="," open="ORDER BY">
+					${order.column} ${order.dir}
+				</foreach>
+				) A
+			) B
+		<![CDATA[
+		WHERE RNUM >= #{start, jdbcType=NUMERIC} AND RNUM <= #{end, jdbcType=NUMERIC}
+		]]>
+	</select>
+	<select id="selectTuition" resultMap="tuition">
+		SELECT
+			T.SEMSTR_NO	/* 학기번호 */
+			, T.STU_ID	/* 학번 */
+			, (SELECT NM FROM PERSON P WHERE P.ID = T.STU_ID) AS NM	/* 이름 */
+			, (SELECT D.DEPT_NM FROM DEPARTMENT D WHERE S.DEPT_CD = D.DEPT_NO) AS DEPT_NM	/* 학과명 */
+			, (SELECT FN_COCO_STTS(S.GRADE_CD) FROM DUAL) AS GRADE_NM	/* 학년 */
+			, T.AWARD_CD	/* 장학금 코드 */
+			, A.AWARD_NM	/* 장학금명 */
+			, A.AWARD_GIVE_AMT	/* 장학금액 */
+			, T.TUIT_PAY_PERIOD	/* 납부일자 */
+			, T.TUIT_VR_ACTNO	/* 가상계좌 */
+			, T.TUIT_TUITION	/* 등록금 */
+			, T.TUIT_PAY_PERIOD	/* 납부일 */
+			, RN.NTC_DT AS RN_NTC_DT	/* 정규등록시작일 */
+			, RN.NTC_ET AS RN_NTC_ET	/* 정규등록종료일 */
+			, AN.NTC_DT AS AN_NTC_DT	/* 추가등록시작일 */
+			, AN.NTC_ET AS AN_NTC_ET	/* 추가등록종료일 */
+		FROM TUITION T
+		INNER JOIN STUDENT S ON(T.STU_ID = S.STU_ID)
+		LEFT OUTER JOIN AWARD A ON(A.AWARD_CD = T.AWARD_CD)
+		LEFT OUTER JOIN NOTICEBOARD RN ON(T.SEMSTR_NO = RN.SEMSTR_NO AND RN.COCO_CD = 'NB01')
+		LEFT OUTER JOIN NOTICEBOARD AN ON(T.SEMSTR_NO = AN.SEMSTR_NO AND AN.COCO_CD = 'NB02')
+		WHERE
+			T.STU_ID = #{stuId, jdbcType=VARCHAR}
+			AND T.SEMSTR_NO = #{semstrNo, jdbcType=VARCHAR}
+	</select>
+	<update id="updateTuition">
+		UPDATE TUITION
+			SET
+				TUIT_STATUS_CD = 'PAID'
+				, TUIT_PAY_PERIOD = TO_CHAR(SYSDATE, 'YYYYMMDD')
+		WHERE
+			STU_ID = #{stuId, jdbcType=VARCHAR}
+			AND SEMSTR_NO = #{semstrNo, jdbcType=VARCHAR}
+	</update>
+</mapper>

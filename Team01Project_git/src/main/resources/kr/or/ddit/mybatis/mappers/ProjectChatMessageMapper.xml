@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="kr.or.ddit.yguniv.projectchatmessage.dao.ProjectChatMessageMapper">
+<sql id="columns">
+	PROJECTCHATMESSAGE_ID		/*메세지고유번호*/
+	,TEAM_CD					/*팀번호*/
+	,TASK_NO					/*프로젝트과제번호*/
+	,PROJECTCHATMESSAGE_SENDER	/*송신자*/
+	,PROJECTCHATMESSAGE_CONTENT	/*메세지내용*/
+	,PROJECTCHATMESSAGE_DT		/*메세지보낸일시*/
+	,PROJECTCHATMESSAGE_YN		/*채팅메세지삭제여부*/
+
+</sql>
+
+<resultMap type="ProjectChatMessageVO" id="ProjectChatMessageMap" autoMapping="true">
+<id column="PROJECTCHATMESSAGE_ID" property="projectchatmessageId" />
+<result column="PROJECTCHATMESSAGE_SENDER" property="projectchatmessageSender"/>
+<association property="room" javaType="ProjectChatRoomVO" autoMapping="true" />
+<association property="person" column="PROJECTCHATMESSAGE_SENDER"
+ 		select="kr.or.ddit.yguniv.person.dao.PersonMapper.selectPerson"/>
+</resultMap>
+
+
+<select id="selectProjectChatMessageList" resultMap="ProjectChatMessageMap">
+	SELECT 
+	         A.PROJECTCHATMESSAGE_ID		
+	        , A.TEAM_CD					
+	        , A.TASK_NO					
+	        , A.PROJECTCHATMESSAGE_SENDER	
+	        , A.PROJECTCHATMESSAGE_CONTENT	
+	        , A. PROJECTCHATMESSAGE_DT		
+	        , A.PROJECTCHATMESSAGE_YN
+	        , B.PROJECTCHATROOM_TITLE
+	FROM
+	        PROJECTCHATMESSAGE A
+	INNER JOIN
+	        PROJECTCHATROOM B
+	ON
+	        A.TEAM_CD = B.TEAM_CD
+	AND
+	        A.TASK_NO = B.TASK_NO
+	WHERE
+            A.TEAM_CD = #{teamCd,jdbcType=VARCHAR}
+    AND
+    		A.TASK_NO = #{taskNo,jdbcType=VARCHAR}
+	AND
+			A.PROJECTCHATMESSAGE_YN = 'N'
+    ORDER BY
+            A.PROJECTCHATMESSAGE_DT ASC        
+
+</select>
+
+<insert id="insertProjectChatMessage">
+	<selectKey order="BEFORE" keyProperty="projectchatmessageId" resultType="String">
+	SELECT SEQ_PROJECT_CHAT.NEXTVAL FROM DUAL
+	</selectKey>
+	 INSERT INTO PROJECTCHATMESSAGE (
+            PROJECTCHATMESSAGE_ID
+            ,TEAM_CD
+            ,TASK_NO
+            ,PROJECTCHATMESSAGE_SENDER
+            ,PROJECTCHATMESSAGE_CONTENT
+            ,PROJECTCHATMESSAGE_DT
+        ) VALUES (
+            #{projectchatmessageId,jdbcType=VARCHAR}
+            ,#{teamCd,jdbcType=VARCHAR}
+            ,#{taskNo,jdbcType=VARCHAR}
+            ,#{projectchatmessageSender,jdbcType=VARCHAR}
+            ,#{projectchatmessageContent,jdbcType=VARCHAR}
+            ,#{projectchatmessageDt,jdbcType=TIMESTAMP}
+        )
+</insert>
+
+<delete id="deleteProjectChatMessage">
+	 UPDATE PROJECTCHATMESSAGE
+        SET
+            PROJECTCHATMESSAGE_YN = 'Y'
+        WHERE
+            PROJECTCHATMESSAGE_ID = #{projectchatmessageId,jdbcType=VARCHAR}
+
+
+</delete>
+
+<select id="selectPerson" resultType="PersonVO">
+	SELECT
+			NM
+	FROM
+			PERSON
+	WHERE
+			ID = #{id, jdbcType=VARCHAR}
+</select>
+
+
+</mapper>

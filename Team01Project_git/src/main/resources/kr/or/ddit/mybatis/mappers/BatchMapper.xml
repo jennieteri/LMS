@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.yguniv.batch.dao.BatchMapper">
+
+
+<select id="selectCartList" resultType="LectureCartVO">
+select
+    stu_id
+    , lect_no
+    , cart_sttus_cd
+from 
+	lecture_cart
+where
+    cart_sttus_cd = 'SUCC'
+order by rownum
+</select>
+
+<insert id="insertAttendee" parameterType="AttendeeVO">
+INSERT INTO attendee (
+    lect_no
+    , stu_id
+    
+) VALUES (
+    #{lectNo}
+    , #{stuId}
+)
+</insert>
+
+<select id="selectStudentList" resultType="StudentVO">
+select
+    stu_id
+    , stre_cate_cd
+    , dormant_date
+    , b.last_conect_de
+from 
+    student a inner join person b on a.stu_id=b.id
+
+</select>
+
+<update id="updateStudentDormant" parameterType="StudentVO">
+UPDATE student
+SET
+    dormant_date = #{dormantDate}
+WHERE
+        stu_id = #{stuId}
+</update>
+
+
+
+
+
+
+
+
+</mapper>

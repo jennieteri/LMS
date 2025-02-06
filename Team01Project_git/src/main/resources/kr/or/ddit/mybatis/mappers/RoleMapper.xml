@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.yguniv.securityList.dao.RoleMapper">
+
+<resultMap id="StudentResultMap" type="StudentVO" autoMapping="true">
+    <id column="STU_ID" property="id"/>  
+    <result column="NM" property="nm"/> 
+   
+</resultMap>
+
+<select id="selectStudentList" resultMap="StudentResultMap">
+SELECT 
+ 	S.STU_ID
+ 	,P.NM 
+   ,S.GRADE_CD
+   ,S.STRE_CATE_CD
+   ,S.DEPT_CD
+   ,S.PROFE_ID
+   ,S.DORMANT_DATE
+FROM STUDENT S
+INNER JOIN PERSON P ON (P.ID = S.STU_ID)
+WHERE S.GRADE_CD= #{gradeCd}
+	AND S.DEPT_CD = #{deptCo}
+
+
+</select>
+<select id="selectEmployeeList" resultType="EmployeeVO">
+
+SELECT
+   E.EMP_ID,
+    P.NM,
+    E.EMP_DEPT,
+    E.EMP_JBGD,
+    E.EMP_CD
+FROM EMPLOYEE E
+INNER JOIN PERSON P ON (P.ID = E.EMP_ID)
+
+WHERE EMP_DEPT = #{empDept}
+
+
+</select>
+<select id="selectProfessorList" resultType="ProfessorVO">
+
+SELECT
+    PR.PROFE_ID
+    ,P.NM
+    ,PR.DEPT_NO
+    ,PR.PROFE_TYPE
+FROM PROFESSOR PR
+INNER JOIN PERSON P ON (P.ID = PR.PROFE_ID )
+    
+WHERE DEPT_NO = #{deptNo}
+</select>
+
+</mapper>

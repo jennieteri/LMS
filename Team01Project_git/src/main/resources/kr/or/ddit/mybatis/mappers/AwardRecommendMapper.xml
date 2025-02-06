@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.yguniv.award.dao.AwardRecommendMapper">
+
+<resultMap type="AwardAskVO" id="awardAsk" autoMapping="true">
+		<id property="shapDocNo" column="SHAP_DOC_NO"/>
+			<result property="atchFileId" column="ATCH_FILE_ID" />
+		<association property="atchFile" column="ATCH_FILE_ID"
+			select ="kr.or.ddit.yguniv.atch.dao.AtchFileMapper.selectAtchFileEnable"/>
+		 <association property="commonCodeVO" javaType="CommonCodeVO" autoMapping="true">
+    		<id property="cocoCd" column="SHAP_ACC_CD"/> <!-- 공통 코드 -->
+    		<result property="cocoStts" column="COCO_STTS"/> <!-- 상태 -->
+		</association>
+
+		<association property="studentVO" javaType="StudentVO" autoMapping="true">
+			<result property="nm" column="STU_NM"/>
+			<result property="brdt" column="STU_BRDT"/> 
+			<result property="rdnmadr" column="STU_RDNMADR"/> 
+			<result property="zip" column="STU_ZIP"/> 
+			<result property="daddr" column="STU_DADDR"/> 
+			<result property="mbtlnum" column="STU_MBTLNUM"/> 
+			<result property="eml" column="STU_EML"/> 
+			<result property="sexdstnCd" column="STU_SEXDSTNCD"/> 
+		</association>
+		<association property="professorVO" javaType="ProfessorVO" autoMapping="true">
+			<id property="id" column="PROFE_ID"/>
+			<result property="nm" column="PROFE_NM"/>
+		</association>
+		<association property="awardVO" javaType="AwardVO" autoMapping="true">
+			<result property="awardNm" column="AWARD_NM"/>
+			<result property="awardType" column="AWARD_TYPE"/>
+		</association>	
+		
+
+	</resultMap>
+
+<!-- 교직원이 보는 교수가 추천한 추천서 상세조회  -->
+<select id="selectAwardRec" resultMap="awardAsk">
+SELECT 
+    SA.SEMSTR_NO,
+    SA.STU_ID,
+    SA.PROFE_ID,
+    SA.SHAP_RECOMMEND,
+    SP.NM AS STU_NM,           -- 학생 이름
+    PP.NM AS PROFE_NM,         -- 교수 이름
+    SP.BRDT AS STU_BRDT,
+    SP.RDNMADR AS STU_RDNMADR,
+    SP.ZIP AS STU_ZIP,
+    SP.DADDR AS STU_DADDR,
+    SP.MBTLNUM AS STU_MBTLNUM,
+    SP.EML AS STU_EML,
+    CASE SP.SEXDSTN_CD 
+        WHEN 'M' THEN '남'
+        WHEN 'W' THEN '여'
+        ELSE '알 수 없음'
+    END AS STU_SEXDSTNCD,
+    SA.AWARD_CD,
+    A.AWARD_NM AS AWARD_NM,
+    SA.SHAP_RCPT_DATE,
+    SA.SHAP_CHC_DATE,
+    C.COCO_STTS AS COCO_STTS,
+    SA.SHAP_NO_REASON,
+    SA.SHAP_DOC_NO,
+    SA.ATCH_FILE_ID
+FROM SCHOLARSHIP_APPLICATION SA
+INNER JOIN PERSON SP ON (SA.STU_ID = SP.ID)    -- 학생 정보
+INNER JOIN PERSON PP ON (SA.PROFE_ID = PP.ID) -- 교수 정보
+INNER JOIN AWARD A ON (SA.AWARD_CD = A.AWARD_CD)
+INNER JOIN COMMON_CODE C ON (SA.SHAP_ACC_CD = C.COCO_CD)
+WHERE SHAP_DOC_NO = #{shapDocNo, jdbcType=VARCHAR}
+
+</select>
+
+
+<!-- 추천서 작성 -->
+<insert id="insertAwardRecAward" parameterType="AwardAskVO">
+
+<selectKey order="BEFORE" keyProperty="shapDocNo"
+			resultType="string">
+			SELECT #{semstrNo} ||
+			LPAD( NVL( TO_NUMBER(
+			SUBSTR(MAX(SHAP_DOC_NO), 7) ), 0) + 1, 4, '0')
+			FROM SCHOLARSHIP_APPLICATION
+			WHERE SEMSTR_NO =
+			#{semstrNo}
+		</selectKey>
+
+
+INSERT INTO scholarship_application (
+    SEMSTR_NO <!-- 학기번호-->
+   ,STU_ID <!-- 학번--> 
+   ,AWARD_CD <!-- 장학금 코드-->
+   ,SHAP_RCPT_DATE <!-- 접수 일시-->
+   ,SHAP_ACC_CD <!-- 장학금 진행 코드-->
+   ,SHAP_DOC_NO <!-- 신청 서류번호-->
+   ,ATCH_FILE_ID <!-- 서류 번호 -->
+   ,PROFE_ID<!--교번  -->
+   ,SHAP_RECOMMEND<!-- 추천사유 -->
+
+) VALUES ( 
+ #{semstrNo,jdbcType= VARCHAR}
+,#{stuId ,jdbcType=VARCHAR}
+,#{awardCd ,jdbcType=VARCHAR}
+,SYSDATE
+,'A02'
+,#{shapDocNo,jdbcType=VARCHAR}
+,#{atchFileId ,jdbcType=NUMERIC}
+,#{profeId ,jdbcType=VARCHAR}
+,#{shapRecommend ,jdbcType=CLOB}
+
+    
+)
+
+</insert>
+<!-- 추천서 삭제  -->
+<delete id="deleteAwardRecAward">
+DELETE FROM SCHOLARSHIP_APPLICATION
+WHERE SHAP_DOC_NO = #{shapDocNo, jdbcType= VARCHAR}
+
+</delete>
+<!-- 교수가 보는 리스트   -->
+<select id="selectAwardProRec" resultMap="awardAsk">
+SELECT 
+
+   SA.SEMSTR_NO
+  ,SA.AWARD_CD
+  ,A.AWARD_NM AS AWARD_NM
+  ,SA.SHAP_RCPT_DATE
+  ,SA.SHAP_CHC_DATE
+  ,SA.SHAP_RECOMMEND
+  ,SA.STU_ID
+  ,SA.PROFE_ID
+  ,C.COCO_STTS AS COCO_STTS
+  ,SA.SHAP_NO_REASON
+  ,SA.SHAP_DOC_NO
+  ,SA.ATCH_FILE_ID
+
+FROM SCHOLARSHIP_APPLICATION SA
+INNER JOIN AWARD A ON (SA.AWARD_CD = A.AWARD_CD)
+INNER JOIN COMMON_CODE C ON(SA.SHAP_ACC_CD = C.COCO_CD)
+
+WHERE PROFE_ID = #{profeId, jdbcType= VARCHAR}
+
+</select>
+
+
+<!-- 신청서 수정 -->
+		<update id="updateAwardRecAward">
+		UPDATE SCHOLARSHIP_APPLICATION 
+		SET 
+					SEMSTR_NO = #{semstrNo,jdbcType=VARCHAR}
+				  	,AWARD_CD = #{awardCd,jdbcType=VARCHAR}
+				  	,SHAP_RECOMMEND= #{shapRecommend ,jdbcType=CLOB}
+				  	,STU_ID=#{stuId, jdbcType=VARCHAR}
+				 <if test="atchFileId neq null">
+ 					 ,ATCH_FILE_ID = #{atchFileId,jdbcType=NUMERIC}
+				</if>
+		
+		
+		WHERE SHAP_DOC_NO =
+					#{shapDocNo,jdbcType= VARCHAR}
+		
+		</update>
+
+
+
+
+</mapper>

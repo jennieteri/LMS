@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.yguniv.attendance.dao.AttendanceMapper">
+<resultMap type="AttendanceVO" id="attendanceMap" autoMapping="true">
+    <association property="commonCodeVO" javaType="CommonCodeVO" autoMapping="true">
+        <result property="cocoStts" column="atndCocoStts"/>
+    </association>
+<!--     <association property="personVO" javaType="PersonVO" autoMapping="true"/> -->
+	<association property="studentVO" javaType="StudentVO" autoMapping="true"/>
+	<association property="lectureVO" javaType="LectureVO" autoMapping="true"/>
+    <association property="orderVO" javaType="OrderLectureDataVO" autoMapping="true">
+        <association property="timeCommonCodeVO" javaType="CommonCodeVO">
+            <result property="cocoStts" column="sectTimeCocoStts"/>
+        </association>
+    </association>
+</resultMap>
+	
+<!-- 아이디는 바로 조인해서 찾으면된다 -->
+
+	<!-- 한 학생의 출결 조회 (수정하기 위해서) -->	
+	<select id="selectAttendance" resultType="AttendanceVO">
+		SELECT
+            LECT_NO
+			, LECT_ORDER
+			, STU_ID
+            , ATND_CD
+		FROM ATTENDANCE 
+		WHERE LECT_NO = #{lectNo, jdbcType=VARCHAR} 
+		  AND LECT_ORDER = #{lectOrder, jdbcType=NUMERIC}
+	</select>
+	
+	<!-- 각 주차별 강의 출결 조회	 -->
+	<select id="selectAttendanceList" resultMap="attendanceMap">
+	SELECT 
+	    B.LECT_NO
+	    , B.WEEK_CD
+	    , B.LECT_ORDER
+	    , E.COCO_STTS AS sectTimeCocoStts 
+	    , C.ID
+	    , C.NM
+	    , B.SECT_DT
+	    , D.COCO_STTS AS atndCocoStts
+        , A.ATND_IDNTY
+	FROM 
+	    ATTENDANCE A
+	    INNER JOIN ORDER_LECTURE_DATA B ON A.LECT_ORDER = B.LECT_ORDER
+	        AND A.LECT_NO = B.LECT_NO 
+	        AND A.WEEK_CD = B.WEEK_CD
+	    INNER JOIN PERSON C ON A.STU_ID = C.ID 
+	    INNER JOIN COMMON_CODE D ON A.ATND_CD = D.COCO_CD  
+	    INNER JOIN COMMON_CODE E ON B.SECT_ETIME = E.COCO_CD
+	</select>
+
+    <!-- 주차와 강의차수에 맞는 출결 데이터를 조회하는 쿼리 -->
+    <select id="selectAttendanceByWeekAndOrder" resultMap="attendanceMap">
+	    SELECT 
+		    B.LECT_NO
+		    , B.WEEK_CD
+		    , B.LECT_ORDER
+		    , E.COCO_STTS
+		    , C.ID
+		    , C.NM
+		    , B.SECT_DT
+		    , D.COCO_STTS 
+		FROM 
+		    ATTENDANCE A
+		    INNER JOIN ORDER_LECTURE_DATA B ON A.LECT_ORDER = B.LECT_ORDER
+		        AND A.LECT_NO = B.LECT_NO 
+		        AND A.WEEK_CD = B.WEEK_CD
+		    INNER JOIN PERSON C ON A.STU_ID = C.ID 
+		    INNER JOIN COMMON_CODE D ON A.ATND_CD = D.COCO_CD  
+		    INNER JOIN COMMON_CODE E ON B.SECT_ETIME = E.COCO_CD
+		WHERE 
+		    A.LECT_NO = #{lectNo, jdbcType=VARCHAR} AND 
+		    A.WEEK_CD = #{weekCd, jdbcType=VARCHAR}
+	</select>
+	
+	<select id="selectListCount" resultMap="attendanceMap">
+		SELECT B.LECT_NM
+		, A.ATND_CD
+		, COUNT(ATND_CD) AS COUNT
+		FROM ATTENDANCE A
+		    INNER JOIN LECTURE B ON A.LECT_NO = B.LECT_NO
+		WHERE A.LECT_NO = #{lectNo, jdbcType=VARCHAR}
+		AND A.STU_ID = #{stuId, jdbcType=VARCHAR}
+		GROUP BY B.LECT_NM, A.ATND_CD
+		ORDER BY A.ATND_CD
+	</select>
+	
+	<select id="selectListnonstuCount" resultMap="attendanceMap">
+		SELECT B.LECT_NM
+		, A.ATND_CD
+		, COUNT(ATND_CD) AS COUNT
+		FROM ATTENDANCE A
+		    INNER JOIN LECTURE B ON A.LECT_NO = B.LECT_NO
+		WHERE A.LECT_NO = #{lectNo, jdbcType=VARCHAR}
+		GROUP BY B.LECT_NM, A.ATND_CD
+		ORDER BY A.ATND_CD
+	</select>
+	
+		<!-- 학생 아이디를 찾아야되 -->
+		<!-- <if test="stuId != null and stuId != ''">
+        	AND A.STU_ID = #{stuId, jdbcType=VARCHAR}
+    	</if> -->
+		<!-- <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(stuId)">
+			AND A.STU_ID = #{AttendanceVO.stuId, jdbcType=VARCHAR}
+		</if> -->
+	
+	<select id="selectLectureList" resultMap="attendanceMap">
+		SELECT DISTINCT A.LECT_NO, B.LECT_NM
+		FROM ATTENDANCE A
+    	INNER JOIN LECTURE B ON A.LECT_NO = B.LECT_NO
+	</select>
+
+	
+	<insert id="insertAttendance">
+	    INSERT INTO ATTENDANCE
+	    (STU_ID
+       	, WEEK_CD
+       	, LECT_ORDER
+		, LECT_NO
+		, ATND_CD
+		, ATND_IDNTY)
+	    VALUES
+	    (#{stuId}, #{weekCd}, #{lectOrder}, #{lectNo}, #{atndCd}, #{atndIdnty})
+	</insert>
+
+
+	<update id="updateAttendance"><!-- MERGE문으로 처리 -->
+		UPDATE ATTENDANCE
+		SET ATND_CD = #{atndCd, jdbcType=VARCHAR}
+		WHERE STU_ID = #{stuId, jdbcType=VARCHAR} 
+		      AND LECT_NO = #{lectNo, jdbcType=VARCHAR} 
+		      AND LECT_ORDER = #{lectOrder, jdbcType=NUMERIC}
+	</update>
+
+
+	<delete id="deleteAttendance">
+		DELETE 
+		FROM ATTENDANCE
+		WHERE STU_ID = #{stuId, jdbcType=VARCHAR} AND 
+		      LECT_NO = #{lectNo, jdbcType=VARCHAR} AND 
+		      LECT_ORDER = #{lectOrder, jdbcType=NUMERIC}
+	</delete>
+	
+</mapper>

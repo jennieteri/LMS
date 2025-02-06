@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="kr.or.ddit.yguniv.projectteam.dao.ProjectTeamMapper">
+<sql id="columns">
+	TEAM_CD 		/*팀번호*/
+	, TEAM_PURPO		/*프로젝트주제*/
+	, TEAM_NOTES		/*프로젝트내용*/
+	, TEAM_EVYN		/*상호평가완료여부*/
+	, TEAM_PROGE		/*과제진행도*/
+	, TEAM_STATUS	/*프로젝트상태*/
+	, TASK_NO 	/*프로젝트과제번호*/
+	, TEAM_NM	/*프로젝트팀명*/
+</sql>
+
+<resultMap type="ProjectTeamVO" id="ProjectTeamMap">
+	<id property="teamCd" column="TEAM_CD"/>
+	<result property="taskNo" column="TASK_NO"/>
+	<association property="projectTask" column="TASK_NO" 
+				select="kr.or.ddit.yguniv.projectTask.dao.ProjectTaskMapper.selectProjectTask"/>
+	<association property="projectTaskSubmission" column="TEAM_CD" select="kr.or.ddit.yguniv.projectTaskSubmission.dao.ProjectTaskSubmissionMapper.checkSubmit"/>			
+	<collection property="teamMember" column="TEAM_CD" select="kr.or.ddit.yguniv.projectMember.dao.ProjectMemberMapper.selectProjectMemberList" autoMapping="true" />
+	
+</resultMap>
+
+
+
+<select id="selectProjectTeam" resultMap="ProjectTeamMap">
+	SELECT	
+			TEAM_CD 		/*팀번호*/
+			, TEAM_PURPO		/*프로젝트주제*/
+			, TEAM_NOTES		/*프로젝트내용*/
+			, TEAM_EVYN		/*상호평가완료여부*/
+			, TEAM_PROGE		/*과제진행도*/
+			, TEAM_STATUS	/*프로젝트상태*/
+			, TASK_NO 	/*프로젝트과제번호*/
+			, TEAM_NM	/*프로젝트팀명*/
+	FROM
+			PROJECT_TEAM
+	WHERE
+			TEAM_CD = #{teamCd}
+</select>
+
+<select id="selectProjectTeamlistWithTask" resultMap="ProjectTeamMap">
+	SELECT
+			ROWNUM AS RNUM
+			,TEAM_CD 		/*팀번호*/
+			, TEAM_PURPO		/*프로젝트주제*/
+			, TEAM_NOTES		/*프로젝트내용*/
+			, TEAM_EVYN		/*상호평가완료여부*/
+			, TEAM_PROGE		/*과제진행도*/
+			, TEAM_STATUS	/*프로젝트상태*/
+			, TASK_NO 	/*프로젝트과제번호*/
+			, TEAM_NM	/*프로젝트팀명*/
+	FROM
+			PROJECT_TEAM
+			
+	WHERE TASK_NO = #{taskNo}
+	
+</select>
+
+<update id="updateProjectTeam">
+	/*일반수정 주제,내용,  변경*/
+	UPDATE
+			PROJECT_TEAM
+	SET
+			TASK_NO      = #{taskNo,jdbcType=VARCHAR}
+			, TEAM_PURPO = #{teamPurpo,jdbcType=VARCHAR}
+			, TEAM_NOTES = #{teamNotes,jdbcType=VARCHAR}
+	WHERE
+			TEAM_CD = #{teamCd,jdbcType=VARCHAR}
+	
+</update>
+
+<insert id="insertProjectTeam">
+	<selectKey order="BEFORE" resultType="String" keyProperty="teamCd">
+		SELECT SEQ_PROJECT_TEAM.NEXTVAL FROM DUAL
+	</selectKey>
+	INSERT INTO PROJECT_TEAM(
+		TEAM_CD
+		,TEAM_STATUS
+		,TASK_NO
+		,TEAM_PURPO
+		,TEAM_NOTES
+		,TEAM_EVYN
+		,TEAM_PROGE
+		<if test="teamNm neq null">
+		, TEAM_NM	/*프로젝트팀명*/
+		</if>
+	)VALUES(
+		 #{teamCd,jdbcType=VARCHAR}
+		, 'N'
+		, #{taskNo,jdbcType=VARCHAR}
+		, #{teamPurpo,jdbcType=VARCHAR}
+		, #{teamNotes,jdbcType=VARCHAR}
+		, 'N'
+		, 0
+		<if test="teamNm neq null">
+		, #{teamNm,jdbcType=VARCHAR}
+		</if>
+	)
+	
+</insert>
+
+<delete id="deleteProjectTeam">
+	DELETE 
+	
+	FROM
+			PROJECT_TEAM
+	WHERE
+			TEAM_CD = #{teamCd,jdbcType=VARCHAR}
+</delete>
+
+
+<update id="updateStatus">
+	/*프로젝트 상태변경 제출처리*/
+	UPDATE
+			PROJECT_TEAM
+	SET
+			TEAM_STATUS = #{teamStatus,jdbcType=VARCHAR}
+	WHERE
+			TEAM_CD = #{teamCd,jdbcType=VARCHAR}
+</update>
+
+<update id="updateEvyn">
+	/*프로젝트 상호평가완료여부변경(완료처리)*/
+	UPDATE
+			PROJECT_TEAM
+	SET
+			TEAM_EVYN = 'Y'
+	WHERE
+			TEAM_CD = #{teamCd,jdbcType=VARCHAR}
+</update>
+
+
+<update id="updateProge">
+	/*프로젝트 과제진행도변경처리(진행률)*/
+	UPDATE
+			PROJECT_TEAM
+	SET
+			TEAM_PROGE = #{teamProge,jdbcType=NUMERIC}
+	WHERE
+			TEAM_CD = #{teamCd,jdbcType=VARCHAR}
+
+</update>
+
+<select id="countProjectTeamNoMember" resultType="Int">
+	SELECT 
+			COUNT(*)
+	FROM 
+			PROJECT_TEAM A
+	WHERE 
+			A.TEAM_STATUS = 'N'
+	AND
+        	A.TASK_NO = #{taskNo,jdbcType=VARCHAR}
+    AND    
+			NOT EXISTS (
+		        SELECT 1
+		        FROM PROJECT_MEMBER PM
+		        WHERE PM.TEAM_CD = A.TEAM_CD
+		    )
+
+
+</select>
+
+
+<update id="updateTeamNm">
+	UPDATE
+			PROJECT_TEAM
+	SET
+			TEAM_NM = #{teamNm,jdbcType=VARCHAR}
+	WHERE
+			TEAM_CD = #{teamCd,jdbcType=VARCHAR}
+
+</update>
+
+
+<delete id="resetTeamMember">
+	DELETE
+			
+	FROM
+			PROJECT_MEMBER
+	WHERE
+			TASK_NO = #{taskNo,jdbcType=VARCHAR}
+
+</delete>
+
+</mapper>

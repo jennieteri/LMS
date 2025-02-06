@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="kr.or.ddit.yguniv.jobtestresult.dao.JobTestResultMapper">
+
+<resultMap type="kr.or.ddit.yguniv.vo.JobTestResultVO" id="jobTestResultMap">
+    <!-- 기본 필드 매핑 -->
+    <id property="stuId" column="STU_ID"/>
+    <result property="rnum" column="RNUM"/>
+    <result property="jtrRea" column="JTR_REA"/>
+    <result property="jtrInq" column="JTR_INQ"/>
+    <result property="jtrArt" column="JTR_ART"/>
+    <result property="jtrSoc" column="JTR_SOC"/>
+    <result property="jtrEnt" column="JTR_ENT"/>
+    <result property="jtrCon" column="JTR_CON"/>
+    <result property="jtrDt" column="JTR_DT"/>
+    <result property="code" column="CODE"/> <!-- 공통코드 -->
+
+    <!-- 학생 정보 가져오기 -->
+    <association property="student" javaType="StudentVO">
+        <id property="id" column="ID"/>
+        <result property="nm" column="NM"/>
+        <result property="gradeCd" column="GRADE_CD"/> <!-- StudentVO의 gradeCd 매핑 -->
+    </association>
+</resultMap>
+
+	
+<!-- 직업선호도결과 상세보기 -->
+	<select id="selectjobTestResult" parameterType="string" resultMap="jobTestResultMap">
+	SELECT 
+	    J.STU_ID
+	    , J.JTR_REA
+	    , J.JTR_INQ
+	    , J.JTR_ART
+	    , J.JTR_SOC
+	    , J.JTR_ENT
+	    , J.JTR_CON
+	    , J.JTR_DT
+	    , P.NM
+	FROM JOB_TEST_RESULT J
+	INNER JOIN PERSON P ON P.ID=J.STU_ID
+	WHERE J.STU_ID=#{stuId, jdbcType=VARCHAR}
+	</select>
+
+
+
+
+		
+<!-- 전체 게시글 수 조회 -->
+<select id="selectTotalRecord" resultType="int">
+    SELECT COUNT(J.STU_ID)
+    FROM JOB_TEST_RESULT J
+    INNER JOIN PERSON P ON P.ID = J.STU_ID
+    INNER JOIN STUDENT S ON S.STU_ID = J.STU_ID
+    <where>
+        <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+            <choose>
+                <when test="simpleCondition.searchType eq 'number'">
+                    INSTR(J.STU_ID, #{simpleCondition.searchWord}) > 0
+                </when>
+                <when test="simpleCondition.searchType eq 'name'">
+                    INSTR(P.NM, #{simpleCondition.searchWord}) > 0
+                </when>
+            </choose>
+        </if>
+    </where>
+</select>
+				
+			
+<!-- 	교직원이 보는 직업선호도평가결과 -->
+	<select id="selectjobTestResultListByEmp" parameterType="JobTestResultVO" resultMap="jobTestResultMap">
+	SELECT *
+	FROM(
+		SELECT A.*, ROWNUM AS RNUM
+		FROM(
+			SELECT 
+		    J.STU_ID,
+		    J.JTR_REA,
+		    J.JTR_INQ,
+		    J.JTR_ART,
+		    J.JTR_SOC,
+		    J.JTR_ENT,
+		    J.JTR_CON,
+		    J.JTR_DT,
+		    P.NM,
+		    S.GRADE_CD,
+		   (SELECT COCO_STTS FROM COMMON_CODE WHERE COCO_CD=S.GRADE_CD )AS CODE
+		FROM 
+		    JOB_TEST_RESULT J
+		INNER JOIN PERSON P ON P.ID = J.STU_ID
+		INNER JOIN STUDENT S ON S.STU_ID = J.STU_ID
+			  WHERE 1=1
+                   <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+                    AND
+                    <choose>
+                        <when test="simpleCondition.searchType eq 'number'">
+                            INSTR(J.STU_ID, #{simpleCondition.searchWord}) > 0
+                        </when>
+                        <when test="simpleCondition.searchType eq 'name'">
+                            INSTR(P.NM, #{simpleCondition.searchWord}) > 0
+                        </when>
+                    </choose>
+                </if>
+            <![CDATA[
+            ) A
+            WHERE ROWNUM <= #{endRow}
+        ) B
+        WHERE RNUM >= #{startRow}
+    ]]>
+	</select>
+	
+</mapper>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.yguniv.discussion.dao.DiscussionMapper">
+	<select id="selectDiscussionRequestList"></select>
+	<select id="selectDiscussionRequest"></select>
+	<insert id="insertDiscussionRequest"></insert>
+	<update id="updateDiscussionRequest"></update>
+	<delete id="deleteDiscussionRequest"></delete>
+	
+	<update id="consentDiscussionRequest"></update>
+	<update id="returnDiscussionRequest"></update>
+	
+	<select id="selectDiscussionList"></select>
+	<select id="selectDiscussion"></select>
+	<update id="updateDiscussion"></update>
+</mapper>

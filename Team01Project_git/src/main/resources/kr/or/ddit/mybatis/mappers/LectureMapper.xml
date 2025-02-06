@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.yguniv.lecture.dao.LectureMapper">
+	<select id="myLectureList" resultType="LectureVO">
+			SELECT L.LECT_NO, L.LECT_NM
+			FROM LECTURE L
+			INNER JOIN ATTENDEE A ON(L.LECT_NO = A.LECT_NO AND A.STU_ID = #{id, jdbcType=VARCHAR})
+			WHERE L.LECT_STATUS_CD IN ('L03', 'L04')
+		UNION ALL
+			SELECT L.LECT_NO, L.LECT_NM
+			FROM LECTURE L
+			WHERE L.PROFE_ID = #{id, jdbcType=VARCHAR}
+			AND L.LECT_STATUS_CD IN ('L02', 'L03', 'L04')
+	</select>
+	
+	<resultMap type="LectureVO" id="lectureRequest" autoMapping="true">
+		<id property="lectNo" column="LECT_NO"/>
+		<association property="subjectVO" javaType="SubjectVO" autoMapping="true">
+			<association property="subFicdCdCommonCodeVO" javaType="CommonCodeVO">
+				<result property="cocoStts" column="SUB_FICD_NM"/>
+			</association>
+		</association>
+		<association property="commonCodeVO" javaType="CommonCodeVO" autoMapping="true"/>
+		<association property="professorVO" javaType="ProfessorVO" autoMapping="true"/>
+	</resultMap>
+	<select id="selectLectureRequestList" resultMap="lectureRequest">
+		SELECT
+			L.LECT_NO	/* 강의번호 */
+			, L.PROFE_ID	/* 교수번호 */
+			, (SELECT NM
+				FROM PERSON
+				WHERE ID = PROFE_ID) AS NM	/* 교수이름 */
+			, L.SUB_NO	/* 과목번호 */
+			, S.SUB_NM	/* 과목명 */
+			, (SELECT COCO_STTS
+				FROM COMMON_CODE
+				WHERE COCO_CD = S.SUB_FICD_CD) AS SUB_FICD_NM	/* 과목분류명 */
+			, L.LECT_STATUS_CD	/* 강의상태코드 */
+			, (SELECT COCO_STTS
+				FROM COMMON_CODE
+				WHERE COCO_CD = L.LECT_STATUS_CD) AS COCO_STTS	/* 강의상태명 */
+			, L.SEMSTR_NO	/* 학기번호 */
+			, L.LECT_SCORE	/* 학점 */
+			, L.LECT_NM	/* 강의명 */
+			, L.LECT_SESSION	/* 총차수 */
+			, L.LECT_ATTEN_NOPE	/* 수강인원 */
+			, L.LECT_EN_NOPE	/* 강의모집인원 */
+			, L.LECT_ONLINE_YN	/* 온라인수업여부 */
+			, L.LECT_RETURN	/* 반려사유 */
+			, L.LECT_ABL	/* 폐강사유 */
+		FROM LECTURE L
+		INNER JOIN SUBJECT S ON(L.SUB_NO = S.SUB_NO)
+		WHERE SEMSTR_NO = #{semstrNo, jdbcType=VARCHAR}
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(profeId)">
+			AND PROFE_ID = #{profeId, jdbcType=VARCHAR}
+		</if>
+	</select>
+	
+	<resultMap type="LectureEvaluationStandardVO" id="lectureEvaluationStandard" autoMapping="true">
+		<association property="commonCodeVO" javaType="CommonCodeVO" autoMapping="true"/>
+	</resultMap>
+	<select id="getLectureEvaluationStandard" resultMap="lectureEvaluationStandard">
+		SELECT 
+			L.EVL_STDR_CD	/* 평가기준코드 */
+			, C.COCO_STTS	/* 평가기준명 */
+			, L.RATE	/* 평가비율 */
+		FROM LECTURE_EVALUATION_STANDARD L
+		INNER JOIN COMMON_CODE C ON(L.EVL_STDR_CD = C.COCO_CD)
+		WHERE LECT_NO = #{lectNo, jdbcType=VARCHAR}
+		ORDER BY C.OUTPT_ORDR
+	</select>
+	<resultMap type="WeekLecturePlanVO" id="weekLecturePlan" autoMapping="true">
+		<association property="commonCodeVO" javaType="CommonCodeVO" autoMapping="true"/>
+	</resultMap>
+	<select id="getWeekLecturePlan" resultMap="weekLecturePlan">
+		SELECT 
+			W.WEEK_CD	/* 주차코드 */
+			, C.COCO_STTS	/* 주차명 */
+			, W.LECT_PLAN	/* 강의계획 */
+		FROM WEEK_LECTURE_PLAN W
+		INNER JOIN COMMON_CODE C ON(W.WEEK_CD = C.COCO_CD)
+		WHERE LECT_NO = #{lectNo, jdbcType=VARCHAR}
+		ORDER BY C.OUTPT_ORDR
+	</select>
+	<resultMap type="ScheduleVO" id="schedule" autoMapping="true">
+		<association property="commonCodeVO" javaType="CommonCodeVO" autoMapping="true"/>
+		<association property="classRoomVO" javaType="ClassRoomVO" autoMapping="true"/>
+		<association property="ettcVO" javaType="EducationTimeTableCodeVO">
+			<association property="commonCodeVO" javaType="CommonCodeVO">
+				<result property="cocoStts" column="EDC_TIME_NM"/>
+			</association>
+		</association>
+	</resultMap>
+	<select id="getSchedule" resultMap="schedule">
+		SELECT 
+			S.DATE_CD	/* 요일코드 */
+			, C.COCO_STTS	/* 요일명 */
+			, S.EDC_TIME_CD	/* 강의교시 */
+			, (SELECT COCO_STTS
+				FROM COMMON_CODE C
+				WHERE S.EDC_TIME_CD = C.COCO_CD) AS EDC_TIME_NM
+			, S.CROOM_CD
+			, R.CROOM_PSTN	/* 강의실위치 */
+			, R.CROOM_NM	/* 강의실명 */
+		FROM SCHEDULE S
+		INNER JOIN COMMON_CODE C ON(S.DATE_CD = C.COCO_CD)
+		INNER JOIN CLASS_ROOM R ON(S.CROOM_CD = R.CROOM_CD)
+		WHERE LECT_NO = #{lectNo, jdbcType=VARCHAR}
+		ORDER BY C.OUTPT_ORDR
+	</select>
+	<resultMap type="LectureVO" id="lectureRequestDetail" autoMapping="true">
+		<id property="lectNo" column="LECT_NO"/>
+		<association property="subjectVO" javaType="SubjectVO" autoMapping="true">
+			<association property="subFicdCdCommonCodeVO" javaType="CommonCodeVO">
+				<result property="cocoStts" column="SUB_FICD_NM"/>
+			</association>
+			<association property="gradeCdCommonCodeVO" javaType="CommonCodeVO">
+				<result property="cocoStts" column="GRADE_NM"/>
+			</association>
+			<association property="departmentVO" autoMapping="true"/>
+		</association>
+		<association property="commonCodeVO" javaType="CommonCodeVO" autoMapping="true"/>
+		<association property="professorVO" javaType="ProfessorVO" autoMapping="true">
+			<association property="departmentVO" javaType="DepartmentVO">
+				<result property="deptNm" column="PROFE_DEPT_NM"/>
+			</association>
+		</association>
+		<collection property="lesVo" ofType="LectureEvaluationStandardVO" select="getLectureEvaluationStandard" column="LECT_NO"/>
+		<collection property="weekVO" ofType="WeekLecturePlanVO" select="getWeekLecturePlan" column="LECT_NO"/>
+		<collection property="scheduleVO" ofType="ScheduleVO" select="getSchedule" column="LECT_NO"/>
+	</resultMap>
+	<select id="selectLectureRequest" resultMap="lectureRequestDetail">
+		SELECT
+			L.LECT_NO	/* 강의번호 */
+			, L.PROFE_ID	/* 교수번호 */
+			, P.NM	/* 교수이름 */
+			, P.EML	/* 교수이메일 */
+			, P.MBTLNUM	/* 교수연락처 */
+			, (SELECT DEPT_NM
+				FROM DEPARTMENT D
+				WHERE D.DEPT_NO = F.DEPT_NO) AS PROFE_DEPT_NM	/* 교수학과명 */
+			, L.SUB_NO	/* 과목번호 */
+			, S.SUB_NM	/* 과목명 */
+			, (SELECT COCO_STTS
+				FROM COMMON_CODE
+				WHERE COCO_CD = S.SUB_FICD_CD) AS SUB_FICD_NM	/* 과목분류명 */
+			, (SELECT COCO_STTS
+				FROM COMMON_CODE
+				WHERE COCO_CD = S.GRADE_CD) AS GRADE_NM	/* 학년명 */
+			, (SELECT DEPT_NM
+				FROM DEPARTMENT D
+				WHERE D.DEPT_NO = S.DEPT_NO) AS DEPT_NM	/* 과목학과명 */
+			, L.LECT_STATUS_CD	/* 강의상태코드 */
+			, (SELECT COCO_STTS
+				FROM COMMON_CODE
+				WHERE COCO_CD = LECT_STATUS_CD) AS COCO_STTS	/* 강의상태명 */
+			, L.SEMSTR_NO	/* 학기번호 */
+			, L.LECT_SCORE	/* 학점 */
+			, L.LECT_NM	/* 강의명 */
+			, L.LECT_SESSION	/* 총차수 */
+			, L.LECT_ATTEN_NOPE	/* 수강인원 */
+			, L.LECT_EN_NOPE	/* 강의모집인원 */
+			, L.LECT_ONLINE_YN	/* 온라인수업여부 */
+			, L.LECT_DESCR	/* 강의설명 */
+		FROM LECTURE L
+		INNER JOIN PERSON P ON(L.PROFE_ID = P.ID)
+		INNER JOIN PROFESSOR F ON(L.PROFE_ID = F.PROFE_ID)
+		INNER JOIN SUBJECT S ON(L.SUB_NO = S.SUB_NO)
+		WHERE LECT_NO = #{lectNo, jdbcType=VARCHAR}
+	</select>
+
+	<insert id="insertLectureRequest">
+		<selectKey keyProperty="lectNo" keyColumn="LECT_NO" resultType="String" order="BEFORE">
+			SELECT 'L' || LPAD(SEQ_LECTURE.NEXTVAL, 3, '0') AS LECT_NO
+			FROM DUAL
+		</selectKey>
+		INSERT INTO LECTURE (
+		    LECT_NO
+		    , PROFE_ID
+		    , SUB_NO
+		    , LECT_STATUS_CD
+		    , SEMSTR_NO
+		    , LECT_SCORE
+		    , LECT_NM
+		    , LECT_SESSION
+		    , LECT_EN_NOPE
+		    , LECT_ONLINE_YN
+		    , LECT_DESCR
+		) VALUES (
+		    #{lectNo, jdbcType=VARCHAR}
+		    , #{profeId, jdbcType=VARCHAR}
+		    , #{subNo, jdbcType=VARCHAR}
+		    , 'L01'
+		    , #{semstrNo, jdbcType=VARCHAR}
+		    , #{lectScore, jdbcType=NUMERIC}
+		    , #{lectNm, jdbcType=VARCHAR}
+		    , #{lectSession, jdbcType=NUMERIC}
+		    , #{lectEnNope, jdbcType=NUMERIC}
+		    , #{lectOnlineYn, jdbcType=CHAR}
+		    , #{lectDescr, jdbcType=VARCHAR}
+		)
+	</insert>
+	<insert id="insertSchedule">
+		INSERT INTO SCHEDULE (
+		    LECT_NO
+		    , CROOM_CD
+		    , DATE_CD
+		    , EDC_TIME_CD
+		) 
+		<foreach collection="scheduleVO" item="schedule" separator=" UNION ALL ">
+			SELECT
+			    #{lectNo, jdbcType=VARCHAR}
+			    , #{schedule.croomCd, jdbcType=VARCHAR}
+			    , #{schedule.dateCd, jdbcType=VARCHAR}
+			    , #{schedule.edcTimeCd, jdbcType=VARCHAR}
+			FROM DUAL
+		</foreach>
+	</insert>
+	<insert id="insertLectEvalStan">
+		INSERT INTO LECTURE_EVALUATION_STANDARD (
+		    LECT_NO
+		    , EVL_STDR_CD
+		    , RATE
+		) 
+		<foreach collection="lesVo" item="les" separator=" UNION ALL ">
+			SELECT
+			    #{lectNo, jdbcType=VARCHAR}
+			    , #{les.evlStdrCd, jdbcType=VARCHAR}
+			    , #{les.rate, jdbcType=NUMERIC}
+			FROM DUAL
+		</foreach>
+	</insert>
+	<insert id="insertWeekLecturePlan">
+		INSERT INTO WEEK_LECTURE_PLAN (
+		    LECT_NO
+		    , WEEK_CD
+		    , LECT_PLAN
+		)
+		<foreach collection="weekVO" item="week" separator=" UNION ALL ">
+			SELECT
+			    #{lectNo, jdbcType=VARCHAR}
+			    , #{week.weekCd, jdbcType=VARCHAR}
+			    , #{week.lectPlan, jdbcType=VARCHAR}
+			FROM DUAL
+		</foreach>
+	</insert>
+	
+	<update id="updateLectureRequest">
+		UPDATE LECTURE
+		    SET
+			    SUB_NO = #{subNo, jdbcType=VARCHAR}
+			    , SEMSTR_NO = #{semstrNo, jdbcType=VARCHAR}
+			    , LECT_SCORE = #{lectScore, jdbcType=NUMERIC}
+			    , LECT_NM = #{lectNm, jdbcType=VARCHAR}
+			    , LECT_SESSION = #{lectSession, jdbcType=NUMERIC}
+			    , LECT_EN_NOPE = #{lectEnNope, jdbcType=NUMERIC}
+			    , LECT_ONLINE_YN = #{lectOnlineYn, jdbcType=CHAR}
+			    , LECT_DESCR = #{lectDescr, jdbcType=VARCHAR}
+			    , LECT_STATUS_CD = 'L01'
+			    , LECT_RETURN = ''
+		WHERE
+		    LECT_NO = #{lectNo, jdbcType=VARCHAR}
+	</update>
+	<delete id="deleteSchedule">
+		DELETE FROM SCHEDULE
+		WHERE
+		    LECT_NO = #{lectNo, jdbcType=VARCHAR}
+	</delete>
+	<delete id="deleteLectEvalStan">
+		DELETE FROM LECTURE_EVALUATION_STANDARD
+		WHERE
+		    LECT_NO = #{lectNo, jdbcType=VARCHAR}
+	</delete>
+	<delete id="deleteWeekLecturePlan">
+		DELETE FROM WEEK_LECTURE_PLAN
+		WHERE
+		    LECT_NO = #{lectNo, jdbcType=VARCHAR}
+	</delete>
+	
+	<delete id="deleteLectureRequest">
+		DELETE FROM LECTURE
+		WHERE
+		    LECT_NO = #{lectNo, jdbcType=VARCHAR}
+	</delete>
+	
+	<update id="lectureStatusUpdate">
+		UPDATE LECTURE
+			SET
+				LECT_STATUS_CD = #{lectStatusCd}
+			<if test="lectReturn != null">
+				, LECT_RETURN = #{lectReturn, jdbcType=VARCHAR}
+			</if>
+			<if test="lectAbl != null">
+				, LECT_ABL = #{lectAbl, jdbcType=VARCHAR}
+			</if>
+		WHERE
+			LECT_NO = #{lectNo, jdbcType=VARCHAR}
+	</update>
+	
+	<insert id="insertLectureWeekPlan">
+		MERGE INTO LECTURE_WEEK L
+		USING (
+		    SELECT 
+		        WEEK_CD,
+		        LECT_NO,
+		        LECT_PLAN
+		    FROM WEEK_LECTURE_PLAN
+		    WHERE LECT_NO = #{lectNo, jdbcType=VARCHAR}
+		) W
+		ON (L.LECT_NO = W.LECT_NO AND L.WEEK_CD = W.WEEK_CD)
+		WHEN MATCHED THEN
+		    UPDATE SET
+		        L.LEWE_NM = W.LECT_PLAN
+		WHEN NOT MATCHED THEN
+		    INSERT (WEEK_CD, LECT_NO, LEWE_NM)
+		    VALUES (W.WEEK_CD, W.LECT_NO, W.LECT_PLAN)
+	</insert>
+</mapper>

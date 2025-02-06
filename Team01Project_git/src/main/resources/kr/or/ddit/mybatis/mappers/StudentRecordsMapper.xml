@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.yguniv.student.dao.StudentRecordsMapper">
+	<select id="selectTotalRecord" resultType="int">
+		SELECT
+			COUNT(*)
+		FROM STUDENT_RECORDS R
+		INNER JOIN PERSON P ON(R.STU_ID = P.ID)
+		INNER JOIN STUDENT S ON(R.STU_ID = S.STU_ID)
+		<where>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.role)">
+				<if test="detailCondition.role eq 'ROLE_STUDENT'">
+					AND R.STU_ID = #{detailCondition.id, jdbcType=VARCHAR}
+				</if>
+				<if test="detailCondition.role eq 'ROLE_PROFESSOR'">
+					AND S.PROFE_ID = #{detailCondition.id, jdbcType=VARCHAR}
+				</if>
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.stuId)">
+				AND INSTR(R.STU_ID, #{detailCondition.stuId, jdbcType=VARCHAR}) > 0
+			</if>
+			<if test="detailCondition.studentVO != null">
+				<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.studentVO.nm)">
+					AND INSTR(P.NM, #{detailCondition.studentVO.nm, jdbcType=VARCHAR}) > 0
+				</if>
+				<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.studentVO.deptCd)">
+					AND S.DEPT_CD = #{detailCondition.studentVO.deptCd, jdbcType=VARCHAR}
+				</if>
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.semstrNo)">
+				AND R.SEMSTR_NO = #{detailCondition.semstrNo, jdbcType=VARCHAR}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.streCateCd)">
+				AND R.STRE_CATE_CD = #{detailCondition.streCateCd, jdbcType=VARCHAR}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.streStatusCd)">
+				AND R.STRE_STATUS_CD = #{detailCondition.streStatusCd, jdbcType=VARCHAR}
+			</if>
+		</where>
+		ORDER BY R.REQST_DT DESC
+	</select>
+	<resultMap type="StudentRecordsVO" id="stuRec" autoMapping="true">
+		<association property="studentVO" javaType="StudentVO" autoMapping="true">
+			<association property="departmentVO" javaType="DepartmentVO" autoMapping="true"/>
+		</association>
+		<association property="streCateCodeVO" javaType="CommonCodeVO">
+			<result property="cocoStts" column="STRE_CATE_NM"/>
+		</association>
+		<association property="streStatusCodeVO" javaType="CommonCodeVO">
+			<result property="cocoStts" column="STRE_STATUS_NM"/>
+		</association>
+		<association property="semesterVO" javaType="SemesterVO">
+			<id property="semstrNo" column="SEMSTR_NO"/>
+		</association>
+		<association property="atchFile" javaType="AtchFileVO" autoMapping="true">
+			<id property="atchFileId" column="ATCH_FILE_ID"/>
+			<collection property="fileDetails" ofType="AtchFileDetailVO" autoMapping="true"/>
+		</association>
+	</resultMap>
+	<select id="selectStudentRecordsList" resultMap="stuRec">
+		SELECT *
+		FROM (
+			SELECT A.*
+				, ROWNUM AS RNUM	/* 순번 */
+			FROM (
+				SELECT
+					R.STRE_ISSU_NO	/* 서류번호 */
+					, R.STU_ID	/* 학생번호 */
+					, P.NM	/* 이름 */
+					, (SELECT DEPT_NM
+						FROM DEPARTMENT D
+						WHERE D.DEPT_NO = S.DEPT_CD) AS DEPT_NM	/* 학과명 */
+					, R.STRE_CATE_CD	/* 학적상태코드 */
+					, (SELECT FN_COCO_STTS(R.STRE_CATE_CD) FROM DUAL) AS STRE_CATE_NM	/* 학적상태명 */
+					, R.SEMSTR_NO	/* 학기번호 */
+					, R.STRE_STATUS_CD	/* 서류상태코드 */
+					, (SELECT FN_COCO_STTS(R.STRE_STATUS_CD) FROM DUAL) AS STRE_STATUS_NM	/* 서류상태명 */
+				FROM STUDENT_RECORDS R
+				INNER JOIN PERSON P ON(R.STU_ID = P.ID)
+				INNER JOIN STUDENT S ON(R.STU_ID = S.STU_ID)
+				<where>
+					<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.role)">
+						<if test="detailCondition.role eq 'ROLE_STUDENT'">
+							AND R.STU_ID = #{detailCondition.id, jdbcType=VARCHAR}
+						</if>
+						<if test="detailCondition.role eq 'ROLE_PROFESSOR'">
+							AND S.PROFE_ID = #{detailCondition.id, jdbcType=VARCHAR}
+						</if>
+					</if>
+					<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.stuId)">
+						AND INSTR(R.STU_ID, #{detailCondition.stuId, jdbcType=VARCHAR}) > 0
+					</if>
+					<if test="detailCondition.studentVO != null">
+						<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.studentVO.nm)">
+							AND INSTR(P.NM, #{detailCondition.studentVO.nm, jdbcType=VARCHAR}) > 0
+						</if>
+						<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.studentVO.deptCd)">
+							AND S.DEPT_CD = #{detailCondition.studentVO.deptCd, jdbcType=VARCHAR}
+						</if>
+					</if>
+					<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.semstrNo)">
+						AND R.SEMSTR_NO = #{detailCondition.semstrNo, jdbcType=VARCHAR}
+					</if>
+					<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.streCateCd)">
+						AND R.STRE_CATE_CD = #{detailCondition.streCateCd, jdbcType=VARCHAR}
+					</if>
+					<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.streStatusCd)">
+						AND R.STRE_STATUS_CD = #{detailCondition.streStatusCd, jdbcType=VARCHAR}
+					</if>
+				</where>
+				ORDER BY R.REQST_DT DESC
+				) A
+			)
+		<![CDATA[
+		WHERE RNUM >= #{startRow, jdbcType=NUMERIC} AND RNUM <= #{endRow, jdbcType=NUMERIC}
+		]]>
+	</select>
+	<select id="selectStudentRecords" resultMap="stuRec">
+		SELECT
+			R.STRE_ISSU_NO	/* 서류번호 */
+			, R.STU_ID	/* 학생번호 */
+			, P.NM	/* 이름 */
+			, (SELECT DEPT_NM
+				FROM DEPARTMENT D
+				WHERE D.DEPT_NO = S.DEPT_CD) AS DEPT_NM	/* 학과명 */
+			, R.STRE_CATE_CD	/* 학적상태코드 */
+			, (SELECT FN_COCO_STTS(R.STRE_CATE_CD) FROM DUAL) AS STRE_CATE_NM	/* 학적상태명 */
+			, R.REQST_DT	/* 요청일시 */
+			, R.STRE_STATUS_CD	/* 서류상태코드 */
+			, (SELECT FN_COCO_STTS(R.STRE_STATUS_CD) FROM DUAL) AS STRE_STATUS_NM	/* 서류상태명 */
+			, R.CONFM_DE	/* 처리일자 */
+			, R.STRE_RES	/* 신청사유 */
+			, R.RETURN_RSN	/* 반려사유 */
+			, R.ATCH_FILE_ID	/* 파일그룹번호 */
+			, A.FILE_SN	/* 파일일련번호 */
+			, A.ORIGNL_FILE_NM	/* 원본파일명 */
+			, A.FILE_FANCYSIZE	/* 파일사이즈 */
+		FROM STUDENT_RECORDS R
+		INNER JOIN PERSON P ON(R.STU_ID = P.ID)
+		INNER JOIN STUDENT S ON(R.STU_ID = S.STU_ID)
+		LEFT OUTER JOIN ATCH_FILE_DETAIL A ON(R.ATCH_FILE_ID = A.ATCH_FILE_ID)
+		WHERE STRE_ISSU_NO = #{streIssuNo, jdbcType=VARCHAR}
+	</select>
+	<select id="selectPrevRequest" resultType="String">
+		SELECT STRE_ISSU_NO
+		FROM STUDENT_RECORDS
+		WHERE STU_ID = #{stuId, jdbcType=VARCHAR}
+		AND CONFM_DE IS NULL
+	</select>
+	<select id="selectPrevRequestSemester" resultType="int">
+		SELECT COUNT(*)
+		FROM STUDENT_RECORDS
+		WHERE STU_ID = #{stuId, jdbcType=VARCHAR}
+		AND SEMSTR_NO = #{semstrNo, jdbcType=VARCHAR}
+		AND STRE_STATUS_CD IN('PS01', 'PS02', 'PS04')
+	</select>
+	<insert id="insertStudentRecords">
+		INSERT INTO STUDENT_RECORDS (
+		    STRE_ISSU_NO	/* 서류발급번호 */
+		    , STU_ID	/* 학생번호 */
+		    , STRE_CATE_CD	/* 학적상태코드 */
+		    , STRE_STATUS_CD	/* 결재상태코드 */
+		    , STRE_RES	/* 학적변동사유 */
+		    , REQST_DT	/* 신청일시 */
+		    , SEMSTR_NO	/* 학기번호 */
+		    , ATCH_FILE_ID	/* 파일그룹번호 */
+		) VALUES (
+		    TO_CHAR(SYSDATE, 'YYYY') || LPAD(SEQ_STU_REC.NEXTVAL, 5, '0')
+		    , #{stuId, jdbcType=VARCHAR}
+		    , #{streCateCd, jdbcType=VARCHAR}
+		    , DECODE(#{streCateCd, jdbcType=VARCHAR}, 'SR02', 'PS02', 'PS01')
+		    , #{streRes, jdbcType=VARCHAR}
+		    , SYSDATE
+		    , #{semstrNo, jdbcType=VARCHAR}
+		    , #{atchFileId, jdbcType=NUMERIC}
+		)
+	</insert>
+	<update id="cancelStudentRecords">
+		UPDATE STUDENT_RECORDS
+			SET
+				STRE_STATUS_CD = 'PS06'
+				, CONFM_DE = TO_CHAR(SYSDATE, 'YYYYMMDD')
+		WHERE
+			STRE_ISSU_NO = #{streIssuNo, jdbcType=VARCHAR}
+	</update>
+	<update id="consentStudentRecords">
+		UPDATE STUDENT_RECORDS
+			SET
+				STRE_STATUS_CD = #{streStatusCd, jdbcType=VARCHAR}
+				<if test="streStatusCd eq 'PS04'">
+					, CONFM_DE = TO_CHAR(SYSDATE, 'YYYYMMDD')
+				</if>
+		WHERE
+			STRE_ISSU_NO = #{streIssuNo, jdbcType=VARCHAR}
+	</update>
+	<update id="updateStudentRecords">
+		UPDATE STUDENT
+			SET
+				<choose>
+					<when test="streCateCd eq 'SR01'">
+						STRE_CATE_CD = 'SC02'
+					</when>
+					<when test="streCateCd eq 'SR02'">
+						STRE_CATE_CD = 'SC01'
+					</when>
+					<when test="streCateCd eq 'SR03'">
+						STRE_CATE_CD = 'SC03'
+					</when>
+					<when test="streCateCd eq 'SR04'">
+						STRE_CATE_CD = 'SC05'
+					</when>
+				</choose>
+		WHERE
+			STU_ID = #{stuId, jdbcType=VARCHAR}
+	</update>
+	<update id="returnStudentRecords">
+		UPDATE STUDENT_RECORDS
+			SET
+				STRE_STATUS_CD = #{streStatusCd, jdbcType=VARCHAR}
+				, CONFM_DE = TO_CHAR(SYSDATE, 'YYYYMMDD')
+				, RETURN_RSN = #{returnRsn, jdbcType=VARCHAR}
+		WHERE
+			STRE_ISSU_NO = #{streIssuNo, jdbcType=VARCHAR}
+	</update>
+</mapper>

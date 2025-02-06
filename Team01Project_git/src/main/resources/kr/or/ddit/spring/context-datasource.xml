@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.3.xsd">
+
+	<!-- 데이터 베이스 연결을 위한 data source 등록 커넥션 수립 -->
+<!-- 	dbinfo안의 정보를 가져와서 읽어야함 -->
+	<util:properties location="classpath:kr/or/ddit/db/DBInfo.properties" id="dbInfo"></util:properties>
+	
+<!-- 	<context:property-placeholder location="classpath:kr/or/ddit/db/DBInfo.properties"/> -->
+
+<!-- 	<bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource"> -->
+<!-- 		<property name="driverClassName" value="#{dbInfo.driverClassName}"></property> -->
+<!-- 		<property name="url" value="#{dbInfo.url}"></property> -->
+<!-- 		<property name="username" value="#{dbInfo.user}"></property> -->
+<!-- 		<property name="password" value="#{dbInfo.password}"></property> -->
+<!-- 	</bean> -->
+
+<!-- 	히카리 컨피그를 세터주입으로 값 설정 생성하고 필수 주입으로 히카리 넣기 -->
+	
+	<bean id="hikariConfig" class="com.zaxxer.hikari.HikariConfig">
+		<property name="driverClassName" value="#{dbInfo.driverClassName}"></property>
+		<property name="jdbcUrl" value="#{dbInfo.url}"></property>
+		<property name="username" value="#{dbInfo.user}"></property>
+		<property name="password" value="#{dbInfo.password}"></property>
+		<property name="maximumPoolSize" value="#{dbInfo.maximulSize}"></property>
+		<property name="minimumIdle" value="#{dbInfo.minimulIdle}"></property>
+		<property name="connectionTimeout" value="#{dbInfo.maxWait}"></property>
+	</bean>
+<bean class="com.zaxxer.hikari.HikariDataSource" id="dataSource">
+	<constructor-arg ref="hikariConfig"></constructor-arg>
+</bean>
+</beans>

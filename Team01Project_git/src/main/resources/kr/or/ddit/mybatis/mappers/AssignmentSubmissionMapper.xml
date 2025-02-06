@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="kr.or.ddit.yguniv.assignmentSubmission.dao.AssignmentSubmissionMapper">
+	
+	<sql id="columns">
+		LECT_NO		     /*강의번호*/
+		,ASSIG_NO        /*과제번호*/
+		,STU_ID          /*학번*/
+		,PEER_ID         /*피어리뷰대상학번*/
+		,ASSUB_NOTES     /*내용*/
+		,ASSUB_FILE      /*첨부파일*/
+		,ASSUB_SCORE     /*점수*/
+		,ASSUB_DATE      /*제출일*/
+		,ASSUB_PEER_SCR  /*피어리뷰점수*/
+		,ATCH_FILE_ID    /*파일그룹번호*/
+		,ASSUB_YN        /*제출상태*/
+	</sql>
+	
+	 <!-- 공통 검색 조건 -->
+    <sql id="searchFrag">
+        <where>
+	            <!-- 강의 번호 -->
+	            <if test="lectNo != null and lectNo != ''">
+	                LECT_NO = #{lectNo,jdbcType=VARCHAR}
+	            </if>
+	            <!-- 과제 번호 -->
+	            <if test="assigNo != null and assigNo != ''">
+	                AND ASSIG_NO = #{assigNo,jdbcType=VARCHAR}
+	            </if>
+	            <!-- 학생 ID -->
+	            <if test="stuId != null and stuId != ''">
+	                AND STU_ID = #{stuId,jdbcType=VARCHAR}
+	            </if>
+        </where>
+    </sql>
+	
+    <!-- 공통 정렬 조건 -->
+    <sql id="commonOrderByClause">
+        <if test="sortColumn != null and sortDirection != null">
+            ORDER BY ${sortColumn} #{sortDirection}
+        </if>
+    </sql>
+	<resultMap type="AssignmentSubmissionVO" id="asToassignment">
+		<result property="atchFileId" column="ATCH_FILE_ID" />
+		<association property="atchFile" column="ATCH_FILE_ID"
+				select="kr.or.ddit.yguniv.atch.dao.AtchFileMapper.selectAtchFileEnable"/>
+	</resultMap>
+	
+	
+	<resultMap type="AssignmentSubmissionVO" id="assignmentSubmissionMap" autoMapping="true">
+		<id property="assigNo" column="ASSIG_NO" />
+		<id property="lectNo" column="LECT_NO" />
+		<id property="stuId" column="STU_ID" />
+		<result property="atchFileId" column="ATCH_FILE_ID" />
+		<association property="atchFile" column="ATCH_FILE_ID"
+				select="kr.or.ddit.yguniv.atch.dao.AtchFileMapper.selectAtchFileEnable"/>
+		<association property="assignment" javaType="AssignmentVO" column="ASSIG_NO"
+			select="kr.or.ddit.yguniv.assignment.dao.AssignmentMapper.selectAssignment" />
+		<association property="attendee" javaType="AttendeeVO" autoMapping="true"></association>
+	</resultMap>
+	
+	
+	
+	<select id="selectAssignmentSubmissionList" resultMap="assignmentSubmissionMap">
+		SELECT B.*, 
+		       C.ATTEN_ATND_SCORE, 
+		       C.ASSIG_SCORE AS ATTEN_ASSIG_SCORE, 
+		       C.TEST_SCORE, 
+		       C.ATTEN_SCORE, 
+		       C.ATTEN_COEVA
+		FROM (
+		    SELECT
+		        ROWNUM AS RNUM,
+		        A.LECT_NO,
+		        A.ASSIG_NO,
+		        A.STU_ID,
+		        A.PEER_ID,
+		        A.ASSUB_NOTES,
+		        A.PEER_YN,
+		        A.ASSUB_SCORE,
+		        A.ASSUB_DATE,
+		        A.ASSUB_PEER_SCR,
+		        A.ATCH_FILE_ID,
+		        A.ASSUB_YN,
+		        L.LECT_NM AS LECT_NM
+		    FROM 
+		        ASSIGNMENT_SUBMISSION A
+		    INNER JOIN
+		        LECTURE L
+		    ON
+		        A.LECT_NO = L.LECT_NO
+		    WHERE 
+		        A.LECT_NO = #{lectNo, jdbcType=VARCHAR} /* 해당 강의만 리스팅 */
+		    AND
+		    	A.ASSUB_YN = 'Y'    
+		    ORDER BY 
+		        A.ASSIG_NO DESC /* 정렬 기준 */
+		) B
+		LEFT JOIN 
+		    ATTENDEE C
+		ON 
+		    B.STU_ID = C.STU_ID
+		AND 
+		    B.LECT_NO = C.LECT_NO
+		<include refid="searchFrag"/>
+		
+	</select>
+	
+	<select id="selectAssignmentSubmission" resultMap="assignmentSubmissionMap">
+		  SELECT /* +++++++++++++++++++++++++++++++++++++++++++++++++++*/
+		    ASUB.LECT_NO
+		    ,ASUB.ASSIG_NO
+		    ,ASUB.STU_ID
+		    ,ASUB.PEER_ID
+		    ,ASUB.ASSUB_NOTES
+		    ,ASUB.PEER_YN
+		    ,ASUB.ASSUB_SCORE
+		    ,ASUB.ASSUB_DATE
+		    ,ASUB.ASSUB_PEER_SCR
+		    ,ASUB.ATCH_FILE_ID
+		    ,ASUB.ASSUB_YN
+		    ,A.ASSIG_NM AS ASSIG_NM
+		    ,A.ASSIG_NOTES
+		    ,A.ASSIG_ED AS ASSIG_ED
+		FROM 
+		    ASSIGNMENT_SUBMISSION ASUB
+		INNER JOIN 
+		    ASSIGNMENT A
+		ON 
+		    ASUB.ASSIG_NO = A.ASSIG_NO
+	    WHERE 
+                ASUB.LECT_NO = #{lectNo,jdbcType=VARCHAR}
+                AND ASUB.ASSIG_NO = #{assigNo,jdbcType=VARCHAR}
+                AND ASUB.STU_ID = #{stuId,jdbcType=VARCHAR}
+        		AND ASUB.ASSUB_YN = 'Y'
+	</select>
+	
+	<select id="duplicateSubmit" resultType="int">
+		SELECT 
+			COUNT(*)
+    	FROM 
+    		ASSIGNMENT_SUBMISSION
+    	<include refid="searchFrag" />
+	</select>
+	
+	<delete id="deleteAssignmentSubmission">
+		DELETE
+		FROM
+			ASSIGNMENT_SUBMISSION
+		WHERE 
+			LECT_NO = #{lectNo,jdbcType=VARCHAR}
+			AND
+			STU_ID = #{stuId,jdbcType=VARCHAR}
+			AND
+			ASSIG_NO = #{assigNo,jdbcType=VARCHAR}
+	</delete>
+	
+	<update id="updateAssignmentSubmission">
+		UPDATE
+			ASSIGNMENT_SUBMISSION
+		SET
+			ASSUB_NOTES =#{assubNotes}
+			<if test="assubDate eq null">
+			,ASSUB_DATE = TO_CHAR(SYSDATE, 'YYYYMMDD')
+			</if>
+			<if test="assubDate neq null">
+			,ASSUB_DATE = #{assubDate}
+			</if>
+			<if test="atchFileId neq null">
+				, ATCH_FILE_ID = #{atchFileId,jdbcType=NUMERIC}
+			</if>
+			<if test="peerId neq null">
+			, PEER_ID = #{peerId, jdbcType=VARCHAR}
+			</if>
+			
+			,ASSUB_YN = 'Y'
+		WHERE
+			LECT_NO = #{lectNo,jdbcType=VARCHAR}
+			AND
+			ASSIG_NO = #{assigNo,jdbcType=VARCHAR}
+			AND
+			STU_ID = #{stuId,jdbcType=VARCHAR}	
+	
+	</update>
+	
+	<update id="gradeScore">
+		UPDATE
+			ASSIGNMENT_SUBMISSION
+		SET
+			ASSUB_SCORE = #{assubScore,jdbcType=NUMERIC}
+		<include refid="searchFrag"/>	
+	
+	</update>
+	
+	<update id="changePeerStatus">
+		UPDATE
+			ASSIGNMENT_SUBMISSION
+		SET
+			PEER_YN = 'Y'
+		<include refid="searchFrag"></include>
+	</update>
+	
+	<insert id="insertAssignmentSubmission">
+		INSERT INTO ASSIGNMENT_SUBMISSION(
+			LECT_NO
+			,ASSIG_NO
+			,STU_ID
+			,PEER_ID
+			,ASSUB_NOTES
+			,PEER_YN
+			,ASSUB_SCORE
+			,ASSUB_DATE
+			,ASSUB_PEER_SCR
+			,ATCH_FILE_ID
+			,ASSUB_YN
+		) VALUES (
+			 #{lectNo,jdbcType=VARCHAR}
+			, #{assigNo,jdbcType=VARCHAR}
+			, #{stuId,jdbcType=VARCHAR}
+			, #{peerId,jdbcType=VARCHAR}
+			, #{assubNotes,jdbcType=VARCHAR}
+			, #{peerYn,jdbcType=CHAR}
+			, #{assubScore,jdbcType=NUMERIC}
+			, #{assubDate,jdbcType=VARCHAR}
+			, #{assubPeerScr,jdbcType=NUMERIC}
+			, #{atchFileId,jdbcType=NUMERIC}
+			, 'Y'
+		)
+	</insert>
+
+	<select id="selectAssignmentSubmissionListWithAssigNo" resultMap="asToassignment">
+		SELECT *
+		FROM
+			ASSIGNMENT_SUBMISSION
+		WHERE 
+				ASSIG_NO = #{assigNo, jdbcType=VARCHAR}
+		AND
+				ASSUB_YN = 'Y'
+	</select>
+
+	<update id="updatePeerScr">
+		UPDATE
+			ASSIGNMENT_SUBMISSION
+		SET
+			ASSUB_PEER_SCR = #{assubPeerScr}
+		WHERE
+			LECT_NO = #{lectNo,jdbcType=VARCHAR}
+		AND 
+			ASSIG_NO = #{assigNo,jdbcType=VARCHAR}
+		AND
+			STU_ID = #{stuId,jdbcType=VARCHAR}	
+	</update>
+	
+	<update id="updatePeerStatus">
+		UPDATE
+			ASSIGNMENT_SUBMISSION
+		SET
+			PEER_YN = 'Y'
+		WHERE
+			LECT_NO = #{lectNo,jdbcType=VARCHAR}
+		AND 
+			ASSIG_NO = #{assigNo,jdbcType=VARCHAR}
+		AND
+			STU_ID = #{stuId,jdbcType=VARCHAR}		
+	</update>
+	
+	<select id="attendListNotPeer" resultType="AttendeeVO">
+	/*피어리뷰대상자조회*/
+	SELECT 
+	        A.*
+	FROM 
+	        ATTENDEE A
+	INNER JOIN 
+			ASSIGNMENT_SUBMISSION S
+	ON(
+	    A.LECT_NO = S.LECT_NO
+	   )
+	    
+	WHERE 
+	    S.PEER_ID IS NULL
+	AND 
+	    A.LECT_NO = #{lectNo,jdbcType=VARCHAR}
+	AND 
+	    S.ASSIG_NO = #{assigNo,jdbcType=VARCHAR}
+	
+	
+	</select>
+	
+</mapper>

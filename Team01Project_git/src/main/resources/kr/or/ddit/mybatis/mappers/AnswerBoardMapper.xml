@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="kr.or.ddit.yguniv.board.answerBoard.dao.AnswerBoardMapper">
+	
+	<sql id="fromFrag">
+		FROM SYSTEM_INQUIRY_BOARD 
+		INNER JOIN PERSON ON (USER_ID = ID)
+		
+	</sql>
+
+	<sql id="freeBoardColumns">
+		SIB_NO
+		,USER_ID
+		,SIB_TTL
+		,SIB_CN
+		,SIB_DT
+		,CASE SIB_STTS_YN
+                    WHEN 'N' THEN '요청'
+                    WHEN 'Y' THEN '완료'
+                    ELSE '알 수 없음'
+                END AS SIB_STTS_YN
+		
+
+	</sql>
+	<!-- 검색 조건 -->
+	<sql id="searchFrag">
+		<where>
+			<if
+				test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+				<choose>
+					<when test="simpleCondition.searchType == 'title'">
+						INSTR(SIB_TTL, #{simpleCondition.searchWord}) > 0
+					</when>
+					<when test="simpleCondition.searchType == 'writer'">
+						INSTR(SIB_STTS_YN, #{simpleCondition.searchWord}) > 0
+					</when>
+					<when
+						test="simpleCondition.searchType eq 'content'">
+						INSTR(SIB_CN, #{simpleCondition.searchWord}) > 0
+					</when>
+					<otherwise>
+						INSTR(SIB_TTL, #{simpleCondition.searchWord}) > 0
+						OR INSTR(USER_ID, #{simpleCondition.searchWord}) > 0
+						OR INSTR(SIB_CN, #{simpleCondition.searchWord}) > 0
+						
+					</otherwise>
+				</choose>
+			</if>
+		</where>
+	</sql>
+	
+
+
+	<select id="selectTotalRecord" resultType="int">
+		SELECT COUNT(SIB_NO) FROM SYSTEM_INQUIRY_BOARD
+		<include refid="searchFrag" />
+	</select>
+
+	<select id="list" resultType="SystemInquiryBoardVO">
+		SELECT B.*
+		FROM
+		(
+		SELECT ROWNUM RNUM, A.*
+		FROM
+		(
+		SELECT
+		SI.SIB_NO
+		,SI.USER_ID
+		,P.NM AS NM 
+		,SI.SIB_TTL
+		,SI.SIB_CN
+		,SI.SIB_DT
+		,CASE SI.SIB_STTS_YN
+                    WHEN 'N' THEN '요청'
+                    WHEN 'Y' THEN '완료'
+                    ELSE '알 수 없음'
+                END AS SIB_STTS_YN
+                ,SI.SIB_TIME
+		FROM SYSTEM_INQUIRY_BOARD SI
+		INNER JOIN PERSON P ON SI.USER_ID = P.ID 
+
+		<include refid="searchFrag" />
+		ORDER BY SI.SIB_NO DESC
+		) A
+		) B
+		
+		<![CDATA[
+		WHERE RNUM >= #{startRow} AND RNUM <= #{endRow}
+		]]>
+
+	</select>
+	
+	
+	
+	
+	<select id="selectBoardListNonPaging">
+	
+		SELECT A.*, ROWNUM RNUM 
+		FROM 
+		( 
+			SELECT
+				<include refid="freeBoardColumns" />
+			FROM SYSTEM_INQUIRY_BOARD ORDER BY SIB_NO DESC 
+		) A
+	
+	
+	</select>
+	
+	
+	
+	<!-- 공지사항 게시판 게시글 상세 조회 -->
+<select id="select" resultType="SystemInquiryBoardVO">
+  
+        SELECT 
+            SI.SIB_NO,
+            SI.USER_ID,
+            P.NM AS NM,
+            SI.SIB_TTL,
+            SI.SIB_CN,
+            SI.SIB_DT,
+            CASE SI.SIB_STTS_YN
+                WHEN 'N' THEN '요청'
+                WHEN 'Y' THEN '완료'
+                ELSE '알 수 없음'
+            END AS SIB_STTS_YN,
+            SI.SIB_ANS,
+            SI.SIB_TIME
+   FROM SYSTEM_INQUIRY_BOARD SI
+        INNER JOIN PERSON P ON SI.USER_ID = P.ID
+    WHERE SI.SIB_NO = #{sibNo}
+      
+
+</select>
+
+	
+	
+	
+	
+	<insert id="insert" parameterType="SystemInquiryBoardVO">
+	
+		<selectKey order="BEFORE" resultType="String" keyProperty="sibNo">
+			SELECT BOARD_SEQ.NEXTVAL FROM DUAL
+		</selectKey>
+
+INSERT INTO SYSTEM_INQUIRY_BOARD (
+	
+	SIB_NO
+			,USER_ID
+			,SIB_TTL
+			,SIB_CN
+			,SIB_DT
+			,SIB_STTS_YN
+             
+
+    
+
+) VALUES (
+#{sibNo,jdbcType=VARCHAR}
+  ,#{userId, jdbcType=VARCHAR}
+        ,#{sibTtl, jdbcType=VARCHAR}
+        ,#{sibCn, jdbcType=CLOB}
+<if test="sibDt != null">
+			, #{sibDt,jdbcType=DATE}
+			</if>
+			<if test="sibDt == null">
+			, SYSDATE 
+			</if>
+        ,'N'	
+)
+	
+	</insert>
+		
+	<update id="update">
+UPDATE SYSTEM_INQUIRY_BOARD 
+SET 
+
+SIB_TTL = #{sibTtl,jdbcType=VARCHAR}
+,SIB_CN = #{sibCn,jdbcType=CLOB}
+
+
+WHERE SIB_NO = #{sibNo}
+</update>
+
+
+
+
+<!-- 공지사항 게시판 게시글 삭제-->
+<delete id="delete" parameterType="SystemInquiryBoardVO">
+
+DELETE FROM SYSTEM_INQUIRY_BOARD
+WHERE SIB_NO = #{sibNo, jdbcType= VARCHAR}
+
+</delete>
+
+
+
+
+<!-- 답변 업로드 -->
+
+<update id="updateReply" parameterType="SystemInquiryBoardVO">
+ UPDATE SYSTEM_INQUIRY_BOARD
+        SET SIB_ANS = #{sibAns, jdbcType=VARCHAR}
+        ,SIB_TIME = SYSDATE
+        
+        
+ WHERE SIB_NO = #{sibNo, jdbcType=VARCHAR}
+
+
+
+</update>
+
+<!--요청 상태 -->
+    <update id="updateStatusToN">
+        UPDATE SYSTEM_INQUIRY_BOARD
+        SET SIB_STTS_YN = 'Y'  <!-- 상태를 'Y'로 변경 -->
+        WHERE SIB_NO = #{sibNo, jdbcType=VARCHAR}
+    </update>
+    
+    
+    <!-- 답변 수정  -->
+    <update id="updateReplyNew" parameterType="SystemInquiryBoardVO">
+    
+    UPDATE SYSTEM_INQUIRY_BOARD
+    SET SIB_ANS = #{sibAns, jdbcType=VARCHAR}
+    WHERE SIB_NO = #{sibNo, jdbcType=VARCHAR}
+    
+    
+    
+    </update>
+     <!--  답변 삭제 -->
+    <update id="deleteReply" parameterType="String">
+     UPDATE SYSTEM_INQUIRY_BOARD
+    SET SIB_ANS = NULL,
+    SIB_STTS_YN = 'N'
+    WHERE SIB_NO = #{sibNo, jdbcType=VARCHAR}
+    
+    </update>
+    
+
+</mapper>
+
+

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.yguniv.eventregistrant.dao.EventRegistrantMapper">
+
+<insert id="insertEventRegistrant" parameterType="EventRegistrantVO">
+    INSERT INTO EVENT_REGISTRANT (
+         JOB_NO
+        ,STU_ID
+    ) VALUES (
+         #{jobNo, jdbcType=VARCHAR}     <!-- 게시글 번호 -->
+        ,#{stuId, jdbcType=VARCHAR}     <!-- 학생 ID -->
+    )
+</insert>
+
+<select id="checkDuplicate" parameterType="EventRegistrantVO" resultType="int">
+    SELECT COUNT(*)
+    FROM EVENT_REGISTRANT
+    WHERE JOB_NO = #{jobNo}
+      AND STU_ID = #{stuId}
+</select>
+
+<delete id="deleteRegistredForJObBoard">
+	DELETE FROM EVENT_REGISTRANT
+	WHERE STU_ID = #{stuId, jdbcType=VARCHAR}
+	AND JOB_NO = #{jobNo, jdbcType=VARCHAR}     
+</delete>
+
+</mapper>

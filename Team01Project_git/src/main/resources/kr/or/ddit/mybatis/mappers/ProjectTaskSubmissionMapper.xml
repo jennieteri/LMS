@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="kr.or.ddit.yguniv.projectTaskSubmission.dao.ProjectTaskSubmissionMapper">
+<sql id="columns">
+
+	TASKSUB_NO	/*프로젝트제출과제번호*/
+	,TASK_NO	/*프로젝트과제번호*/
+	,TEAM_CD	/*프로젝트팀번호*/
+	,TASKSUB_DATE	/*제출일자*/
+	,TASKSUB_SCORE	/*과제점수*/
+	,ATCH_FILE_ID	/*첨부파일*/
+
+</sql>
+
+<resultMap type="ProjectTaskSubmissionVO" id="projectTaskSubmissionMap" autoMapping="true">
+	<id property="tasksubNo" column="TASKSUB_NO"/>
+	<result property="taskNo" column="TASK_NO"/>
+	<result property="teamCd" column="TEAM_CD"/>
+	<result property="atchFileId" column="ATCH_FILE_ID" />
+	<association property="atchFile" column="ATCH_FILE_ID"
+			select="kr.or.ddit.yguniv.atch.dao.AtchFileMapper.selectAtchFileEnable"/>
+	<association property="projectTask" autoMapping="true" />
+	<association property="projectTeam" column="TEAM_CD" select="selectProjectTeamWithTeamCd" />	
+</resultMap>
+
+
+
+<select id="selectProjectTaskSubmission" resultMap="projectTaskSubmissionMap" >
+	SELECT
+			TASKSUB_NO	/*프로젝트제출과제번호*/
+			,TASK_NO	/*프로젝트과제번호*/
+			,TEAM_CD	/*프로젝트팀번호*/
+			,TASKSUB_DATE	/*제출일자*/
+			,TASKSUB_SCORE	/*과제점수*/
+			,ATCH_FILE_ID	/*첨부파일*/
+	FROM
+			PROJECT_TASK_SUBMISSION
+	WHERE 	
+			TASKSUB_NO = #{tasksubNo,jdbcType=VARCHAR}
+			
+			
+</select>
+
+<select id="selectProjectTaskSubmissionList" resultMap="projectTaskSubmissionMap">
+	SELECT 
+	       A.TASKSUB_NO
+	       , A.TASK_NO
+	       , A.TEAM_CD
+	       , A.TASKSUB_DATE
+	       , A.TASKSUB_SCORE
+	       , A.ATCH_FILE_ID
+	       ,B.TASK_NO
+	       ,B. LECT_NO
+	       ,B. TASK_TITLE
+	       ,B. TASK_NOTES
+	       ,B. TASK_ET
+	       ,B. TASK_SCORE
+	       ,B. TASK_STATUS
+	       ,B. ATCH_FILE_ID 
+	FROM
+	        PROJECT_TASK_SUBMISSION A
+	INNER JOIN 
+	        PROJECT_TASK B
+	 ON(
+	    A.TASK_NO = B.TASK_NO
+	 )
+	 WHERE B.LECT_NO = #{lectNo,jdbcType=VARCHAR}
+			
+</select>
+
+
+<insert id="insertProjectTaskSubmission">
+	<selectKey order="BEFORE" resultType="String" keyProperty="tasksubNo">
+		SELECT SEQ_PROJECT_TASK_SUBMISSION.NEXTVAL FROM DUAL
+	</selectKey>
+	INSERT INTO PROJECT_TASK_SUBMISSION(
+	
+		TASKSUB_NO	/*프로젝트제출과제번호*/
+		,TASK_NO	/*프로젝트과제번호*/
+		,TEAM_CD	/*프로젝트팀번호*/
+		,TASKSUB_DATE	/*제출일자*/
+		,TASKSUB_SCORE	/*과제점수*/
+		,ATCH_FILE_ID	/*첨부파일*/
+	
+	) VALUES (
+		#{tasksubNo,jdbcType=VARCHAR}
+		, #{taskNo,jdbcType=VARCHAR}
+		, #{teamCd,jdbcType=VARCHAR}
+		, TO_CHAR(SYSDATE, 'YYYY-MM-DD')
+		, #{tasksubScore,jdbcType=NUMERIC}
+		, #{atchFileId,jdbcType=NUMERIC}
+	)
+		
+
+</insert>
+
+<update id="updateProjectTaskSubmission">
+	UPDATE PROJECT_TASK_SUBMISSION
+	
+	SET
+		TASKSUB_DATE = 	TO_CHAR(TO_DATE(SYSDATE, 'YYYY-MM-DD'),'YYYYMMDD')
+		<if test="atchFileId neq null">
+			, ATCH_FILE_ID = #{atchFileId,jdbcType=NUMERIC}
+		</if>
+		
+	WHERE
+		TASKSUB_NO = #{tasksubNo,jdbcType=VARCHAR}
+
+</update>
+
+<delete id="deleteProjectTaskSubmission">
+	DELETE 
+	FROM
+		PROJECT_TASK_SUBMISSION
+	WHERE
+		TASKSUB_NO = #{tasksubNo,jdbcType=VARCHAR}
+
+</delete>
+
+<update id="updateGradeProjectTaskSubmission">
+	UPDATE PROJECT_TASK_SUBMISSION
+	SET
+		TASKSUB_SCORE = #{tasksubScore,jdbcType=NUMERIC}
+	WHERE
+		TASKSUB_NO = #{tasksubNo,jdbcType=VARCHAR}	
+
+</update>
+
+<select id="selectProjectWithTaskNo" resultType="ProjectTaskVO">
+	SELECT
+			TASK_NO			/*프로젝트과제번호*/
+			,LECT_NO		/*강의번호*/
+			,TASK_TITLE		/*과제주제*/
+			,TASK_NOTES		/*과제내용*/
+			,TASK_ET		/*과제제출마감일*/
+			,TASK_SCORE		/*배점*/
+			,TASK_STATUS	/*과제진행여부*/
+			,ATCH_FILE_ID	/*첨부파일*/
+	FROM
+			PROJECT_TASK
+			
+	WHERE	TASK_NO = #{taskNo,jdbcType=VARCHAR}
+</select>
+
+<select id="selectProjectTeamWithTeamCd" resultType="ProjectTeamVO">
+	SELECT
+			TEAM_CD 		/*팀번호*/
+			, TEAM_PURPO		/*프로젝트주제*/
+			, TEAM_NOTES		/*프로젝트내용*/
+			, TEAM_EVYN		/*상호평가완료여부*/
+			, TEAM_PROGE		/*과제진행도*/
+			, TEAM_STATUS	/*프로젝트상태*/
+			, TASK_NO 	/*프로젝트과제번호*/
+			, TEAM_NM	/*팀명*/
+	FROM
+			PROJECT_TEAM
+	WHERE TEAM_CD = #{teamCd,jdbcType=VARCHAR}
+	
+</select>
+
+<select id="checkSubmit" resultMap="projectTaskSubmissionMap">
+	SELECT
+			TASKSUB_NO	/*프로젝트제출과제번호*/
+			,TASK_NO	/*프로젝트과제번호*/
+			,TEAM_CD	/*프로젝트팀번호*/
+			,TASKSUB_DATE	/*제출일자*/
+			,TASKSUB_SCORE	/*과제점수*/
+			,ATCH_FILE_ID	/*첨부파일*/
+	FROM		
+			PROJECT_TASK_SUBMISSION
+	WHERE
+			TEAM_CD = #{teamCd,jdbcType=VARCHAR}
+</select>
+
+<update id="submitPeer">
+	UPDATE 
+			PROJECT_TASK_SUBMISSION
+	SET
+			ATCH_FILE_ID = #{atchFileId,jdbcType=NUMERIC}
+	WHERE
+			TASKSUB_NO = #{tasksubNo,jdbcType=VARCHAR}	
+
+</update>
+
+
+</mapper>

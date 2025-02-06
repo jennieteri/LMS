@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.yguniv.lecture.dao.LectureMaterialsMapper">
+	<resultMap type="LectureWeekVO" id="lectureDataList" autoMapping="true">
+		<id property="weekCd" column="WEEK_CD"/>
+		<association property="commonCodeVO" javaType="CommonCodeVO" autoMapping="true"/>
+		<association property="lectureVO" javaType="LectureVO" autoMapping="true"/>
+		<collection property="orderLectureDataList" ofType="OrderLectureDataVO" autoMapping="true" notNullColumn="LECT_ORDER">
+			<id property="lectOrder" column="LECT_ORDER"/>
+			<result property="weekCd" column="ORDER_WEEK_CD"/>
+			<association property="classRoomVO" javaType="ClassRoomVO" autoMapping="true"/>
+			<association property="timeCommonCodeVO" javaType="CommonCodeVO">
+				<result property="cocoStts" column="TIME_STTS"/>
+			</association>
+			<association property="attendanceVO" javaType="AttendanceVO" autoMapping="true">
+				<association property="commonCodeVO" javaType="CommonCodeVO">
+					<result property="cocoStts" column="ATND_STTS"/>
+				</association>
+			</association>
+		</collection>
+	</resultMap>
+	<!-- 강의 수업 목록 조회 -->
+	<select id="selectOrderLectureDataList" resultMap="lectureDataList">
+		SELECT W.WEEK_CD	/* 주차코드 */
+		    , W.LEWE_NM	/* 주차설명 */
+		    , C.COCO_STTS	/* 주차코드명 */
+		    , L.LECT_ONLINE_YN	/* 온라인수업여부 */
+		    , D.LECT_ORDER	/* 강의차시 */
+		    , D.LECT_NO	/* 강의번호 */
+		    , D.WEEK_CD AS ORDER_WEEK_CD	/* 차시주차코드 */
+		    , D.SECT_NM	/* 차시명 */
+		    , D.SECT_DT	/* 차시시작일 */
+		    , D.SECT_ET	/* 차시종료일 */
+		    , D.SECT_IDNTY	/* 출석인정시간 */
+		    , D.CROOM_CD	/* 강의실코드 */
+		    , R.CROOM_PSTN	/* 강의실위치 */
+		    , D.SECT_ETIME	/* 교시코드 */
+		    , T.COCO_STTS AS TIME_STTS	/* 교시코드명 */
+		    , A.ATND_IDNTY	/* 시청시간 */
+		    , A.ATND_CD	/* 출결여부 */
+		    , (SELECT COCO_STTS
+		    	FROM COMMON_CODE
+		    	WHERE COCO_CD = A.ATND_CD) AS ATND_STTS
+		FROM (SELECT *
+		    FROM LECTURE_WEEK
+		    WHERE LECT_NO = #{lectNo, jdbcType=VARCHAR}) W
+		LEFT OUTER JOIN ORDER_LECTURE_DATA D ON(D.WEEK_CD = W.WEEK_CD AND D.LECT_NO = #{lectNo, jdbcType=VARCHAR})
+		INNER JOIN COMMON_CODE C ON(W.WEEK_CD = C.COCO_CD)
+		INNER JOIN LECTURE L ON(W.LECT_NO = L.LECT_NO)
+		LEFT OUTER JOIN CLASS_ROOM R ON(D.CROOM_CD = R.CROOM_CD)
+		LEFT OUTER JOIN COMMON_CODE T ON(T.COCO_CD = D.SECT_ETIME)
+		LEFT OUTER JOIN ATTENDANCE A ON(D.LECT_ORDER = A.LECT_ORDER AND A.LECT_NO = #{lectNo, jdbcType=VARCHAR} AND A.STU_ID = #{id, jdbcType=VARCHAR})
+		ORDER BY W.WEEK_CD, D.LECT_ORDER
+	</select>
+	<resultMap type="OrderLectureDataVO" id="orderLectureDataFile" autoMapping="true">
+		<id property="lectOrder" column="LECT_ORDER"/>
+		<collection property="atchFileDetailList" ofType="AtchFileDetailVO" autoMapping="true"/>
+	</resultMap>
+	<!-- 강의 상세 조회(강의방 입장) -->
+	<select id="selectOrderLectureData" resultMap="orderLectureDataFile">
+		SELECT D.LECT_ORDER, D.WEEK_CD, D.LECT_NO
+		    , D.SECT_NM, D.SECT_DT, D.SECT_ET, D.SECT_IDNTY
+		    , D.CROOM_CD	/* 강의실코드 */
+		    , D.SECT_ETIME	/* 교시코드 */
+		    , F.FILE_SN, F.ATCH_FILE_ID, F.FILE_STRE_COURS, F.STRE_FILE_NM, F.ORIGNL_FILE_NM
+		    , F.FILE_EXTSN, F.FILE_CN, F.FILE_SIZE, F.FILE_FANCYSIZE, F.FILE_MIME, F.FILE_DWNCNT
+		FROM ORDER_LECTURE_DATA D
+		LEFT OUTER JOIN ATCH_FILE_DETAIL F ON(D.ATCH_FILE_ID = F.ATCH_FILE_ID)
+		WHERE D.LECT_NO = #{lectNo, jdbcType=VARCHAR}
+		AND D.LECT_ORDER = #{lectOrder, jdbcType=NUMERIC}
+	</select>
+	<select id="selectLectureWeek" resultType="int">
+		SELECT COUNT(*)
+		FROM LECTURE_WEEK
+		WHERE LECT_NO = #{lectNo}
+		AND WEEK_CD = #{weekCd}
+	</select>
+	<!-- 강의 주차 추가 -->
+	<insert id="insertLectureWeek">
+		INSERT INTO LECTURE_WEEK (
+		    WEEK_CD, LECT_NO, LEWE_NM
+		) VALUES (
+		    #{weekCd, jdbcType=VARCHAR}, #{lectNo, jdbcType=VARCHAR}, #{leweNm, jdbcType=VARCHAR}
+		)
+	</insert>
+	<!-- 강의 주차 수정 -->
+	<update id="updateLectureWeek">
+		UPDATE LECTURE_WEEK SET
+			LEWE_NM = #{leweNm, jdbcType=VARCHAR}
+		WHERE
+		    WEEK_CD = #{weekCd, jdbcType=VARCHAR}
+		    AND LECT_NO = #{lectNo, jdbcType=VARCHAR}
+	</update>
+	<!-- 강의 주차 삭제 -->
+	<delete id="deleteLectureWeek">
+		DELETE FROM LECTURE_WEEK
+		WHERE
+		    WEEK_CD = #{weekCd, jdbcType=VARCHAR}
+		    AND LECT_NO = #{lectNo, jdbcType=VARCHAR}
+	</delete>
+	<!-- 강의 차시 추가 -->
+	<insert id="insertOrderLectureData">
+		INSERT INTO ORDER_LECTURE_DATA (
+		    LECT_ORDER, WEEK_CD, LECT_NO
+		    , SECT_NM, SECT_DT, SECT_ET
+		    , SECT_IDNTY, ATCH_FILE_ID
+		    , CROOM_CD, SECT_ETIME
+		) VALUES (
+		    #{lectOrder, jdbcType=NUMERIC}, #{weekCd, jdbcType=VARCHAR}, #{lectNo, jdbcType=VARCHAR}
+		    , #{sectNm, jdbcType=VARCHAR}, #{sectDt, jdbcType=VARCHAR}, #{sectEt, jdbcType=VARCHAR}
+		    , #{sectIdnty, jdbcType=VARCHAR}, #{atchFileId, jdbcType=NUMERIC}
+		    , #{croomCd, jdbcType=VARCHAR}, #{sectEtime, jdbcType=VARCHAR}
+		)
+	</insert>
+	<!-- 강의 차시 수정 -->
+	<update id="updateOrderLectureData">
+		UPDATE ORDER_LECTURE_DATA SET
+			WEEK_CD = #{weekCd, jdbcType=VARCHAR}
+			, LECT_ORDER = #{lectOrder, jdbcType=NUMERIC}
+			, SECT_NM = #{sectNm, jdbcType=VARCHAR}
+		    , SECT_DT = #{sectDt, jdbcType=VARCHAR}
+		    , SECT_ET = #{sectEt, jdbcType=VARCHAR}
+		    , SECT_IDNTY = #{sectIdnty, jdbcType=VARCHAR}
+		    , CROOM_CD = #{croomCd, jdbcType=VARCHAR}
+		    , SECT_ETIME = #{sectEtime, jdbcType=VARCHAR}
+		<if test="atchFileId neq null">
+		    , ATCH_FILE_ID = #{atchFileId, jdbcType=NUMERIC}
+		</if>
+		WHERE
+		    LECT_ORDER = #{originLectOrder, jdbcType=NUMERIC}
+		    AND LECT_NO = #{lectNo, jdbcType=VARCHAR}
+	</update>
+	<!-- 강의 차시 삭제 -->
+	<delete id="deleteOrderLectureData">
+		DELETE FROM ORDER_LECTURE_DATA
+		WHERE
+		    WEEK_CD = #{weekCd, jdbcType=VARCHAR}
+		    AND LECT_NO = #{lectNo, jdbcType=VARCHAR}
+		<!-- 강의 주차 삭제전 주차에 해당하는 차시 삭제의 경우인지 판단 -->
+		<if test="lectOrder neq null">
+		    AND LECT_ORDER = #{lectOrder, jdbcType=NUMERIC}
+		</if>
+	</delete>
+	<!-- 강의 기본정보 조회 -->
+	<resultMap type="LectureVO" id="lecture" autoMapping="true">
+		<id property="lectNo" column="LECT_NO"/>
+		<association property="subjectVO" javaType="SubjectVO" autoMapping="true">
+			<association property="subFicdCdCommonCodeVO" javaType="CommonCodeVO">
+				<result property="cocoStts" column="COCO_STTS"/>
+			</association>
+		</association>
+		<association property="professorVO" javaType="ProfessorVO" autoMapping="true">
+			<id property="id" column="PROFE_ID"/>
+			<result property="nm" column="NM"/>
+			<result property="proflPhoto" column="PROFL_PHOTO" javaType="String" jdbcType="CLOB"/>
+		</association>
+		<collection property="attendeeList" ofType="AttendeeVO">
+			<id property="stuId" column="STU_ID"/>
+			<association property="studentVO" javaType="StudentVO">
+				<result property="nm" column="STU_NM"/>
+			</association>
+		</collection>
+	</resultMap>
+	<select id="selectLecture" resultMap="lecture">
+		SELECT L.LECT_NO, L.LECT_NM, L.LECT_SESSION, L.LECT_ONLINE_YN
+		    , S.COCO_STTS
+		    , P.NM, P.PROFE_ID, P.PROFL_PHOTO
+		    , A.NM AS STU_NM, A.STU_ID
+		FROM LECTURE L
+		INNER JOIN (SELECT SUB_NO, COCO_STTS
+		            FROM SUBJECT
+		            INNER JOIN COMMON_CODE ON(SUB_FICD_CD = COCO_CD)) S ON(L.SUB_NO = S.SUB_NO)
+		INNER JOIN (SELECT PROFE_ID, NM, PROFL_PHOTO
+		            FROM PROFESSOR
+		            INNER JOIN PERSON ON(PROFE_ID = ID)) P ON(L.PROFE_ID = P.PROFE_ID)
+		LEFT OUTER JOIN (SELECT STU_ID, NM, ATTENDEE.LECT_NO
+		            FROM ATTENDEE
+		            INNER JOIN PERSON ON(STU_ID = ID)) A ON(L.LECT_NO = A.LECT_NO)
+		WHERE L.LECT_NO = #{lectNo, jdbcType=VARCHAR}
+		AND LECT_STATUS_CD IN('L02', 'L03', 'L04') 
+	</select>
+</mapper>

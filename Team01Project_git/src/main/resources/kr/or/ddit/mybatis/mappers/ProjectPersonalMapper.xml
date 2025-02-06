@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="kr.or.ddit.yguniv.projectteam.dao.ProjectPersonalMapper">
+	
+<resultMap type="ProjectMemberVO" id="PersonalProjectMap" autoMapping="true">
+<id property="stuId" column="STU_ID"/>
+<id property="lectNo" column="LECT_NO"/>
+<result property="teamCd" column="TEAM_CD"/>
+<result property="nm" column="NM"/>
+<result property="leadYn" column="LEAD_YN"/>
+<result property="peerScore" column="PEER_SCORE"/>
+
+<association property="projectTeam" autoMapping="true" />
+<association property="studentVO" autoMapping="true" />
+</resultMap>	
+	
+	
+<select id="selectProjectTeamWithId" resultMap="PersonalProjectMap">
+	SELECT 
+			A.LECT_NO
+			, A.STU_ID
+			, A.TEAM_CD
+			, A.LEAD_YN
+			, A.PEER_SCORE
+			, B.TEAM_STATUS
+      		, B.TASK_NO
+      		,B.TEAM_PURPO
+      		, B.TEAM_NOTES
+      		, B.TEAM_EVYN
+      		, B.TEAM_PROGE
+      		, B.TEAM_NM
+      		, C.GRADE_CD
+		    , C.STRE_CATE_CD
+		    , C.DEPT_CD
+		    , C.PROFE_ID
+		    , C.DORMANT_DATE
+		    , P.NM AS NM
+	FROM 
+			PROJECT_MEMBER A
+	INNER JOIN 
+			PROJECT_TEAM B
+	ON 
+		A.TEAM_CD = B.TEAM_CD
+	INNER JOIN 
+	    	STUDENT C
+	ON 
+	   	 A.STU_ID = C.STU_ID	
+	INNER JOIN
+			PERSON P
+	ON
+		A.STU_ID = P.ID	
+	WHERE 
+		A.STU_ID = #{stuId,jdbcType=VARCHAR}
+		
+	AND A.LECT_NO = #{lectNo,jdbcType=VARCHAR}
+
+</select>	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+</mapper>

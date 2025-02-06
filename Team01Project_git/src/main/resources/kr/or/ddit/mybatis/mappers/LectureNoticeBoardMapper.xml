@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.yguniv.lecture.dao.LectureNoticeBoardMapper">
+<resultMap type="LectureNoticeBoardVO" id="lectureNoticeBoardMap" autoMapping="true">
+	<result property="atchFileId" column="ATCH_FILE_ID"/>
+	<association property="lectureVO" javaType="LectureVO" autoMapping="true" />
+	<association property="professorVO" javaType="ProfessorVO" autoMapping="true" />
+	<association property="atchFile" column="ATCH_FILE_ID"
+			select="kr.or.ddit.yguniv.atch.dao.AtchFileMapper.selectAtchFileEnable" />
+</resultMap>
+
+	<!-- 아이디는 바로 조인해서 찾으면된다 -->
+
+	<!-- 공지사항 상세 조회 --> 
+	<select id="selectLectureNoticeBoard" resultMap="lectureNoticeBoardMap">
+		SELECT A.CNB_NO
+			 , A.CNB_NM 
+			 , C.NM
+			 , A.CNB_DT
+			 , A.CNB_INQ
+			 , A.CNB_NOTES
+			 , E.STRE_FILE_NM
+			 , E.ATCH_FILE_ID
+        	 , E.FILE_SN
+        	 , E.ORIGNL_FILE_NM
+        	 , E.FILE_FANCYSIZE
+        	 , A.CNB_MAIN_YN
+		FROM LECTURE_NOTICE_BOARD A
+			INNER JOIN LECTURE B ON B.LECT_NO = A.LECT_NO
+			INNER JOIN PERSON C ON C.ID = B.PROFE_ID
+			LEFT OUTER JOIN ATCH_FILE_DETAIL E ON E.ATCH_FILE_ID = A.ATCH_FILE_ID
+		WHERE A.CNB_NO = #{cnbNo, jdbcType=VARCHAR}
+	</select> 
+	<!-- ER BY A.CNB_NO DESC -->
+
+	<select id="selectTotalRecord" resultType="int">
+		SELECT COUNT(A.CNB_NO)
+		FROM LECTURE_NOTICE_BOARD A
+			INNER JOIN LECTURE B ON B.LECT_NO = A.LECT_NO
+			INNER JOIN PROFESSOR C ON C.PROFE_ID = B.PROFE_ID
+			INNER JOIN PERSON D ON D.ID = C.PROFE_ID
+		WHERE A.LECT_NO = #{lectNoticeVO.lectNo, jdbcType=VARCHAR}
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(paging.simpleCondition.searchWord)">
+			<choose>
+				<when
+					test="paging.simpleCondition.searchType eq 'title'">
+					AND INSTR(A.CNB_NM, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+				</when>
+				<when
+					test="paging.simpleCondition.searchType eq 'writer'">
+					AND INSTR(D.NM, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+				</when>
+				<when
+					test="paging.simpleCondition.searchType eq 'content'">
+					AND INSTR(A.CNB_NOTES, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+				</when>
+				<otherwise>
+					AND INSTR(A.CNB_NM, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+					OR INSTR(D.NM, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+					OR INSTR(A.CNB_NOTES, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+				</otherwise>
+			</choose>
+		</if>
+	</select>
+	
+	<!-- 강의 공지사항 조회 -->
+	<select id="selectLectureNoticeBoardList" resultMap="lectureNoticeBoardMap">
+		SELECT G.*
+		FROM
+		(	
+			SELECT F.*, ROWNUM AS RNUM
+			FROM
+			(	
+				SELECT A.CNB_NO 
+				     , A.LECT_NO
+				     , A.CNB_NM
+				     , B.LECT_NM
+				     , D.NM
+				     , A.CNB_NOTES
+				     , A.CNB_DT
+				     , A.CNB_INQ
+				     , A.CNB_MAIN_YN
+				FROM LECTURE_NOTICE_BOARD A
+					INNER JOIN LECTURE B ON B.LECT_NO = A.LECT_NO
+					INNER JOIN PROFESSOR C ON C.PROFE_ID = B.PROFE_ID
+					INNER JOIN PERSON D ON D.ID = C.PROFE_ID
+				<where>
+					A.LECT_NO = #{lectNoticeVO.lectNo, jdbcType=VARCHAR}	
+					<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(paging.simpleCondition.searchWord)">
+						<choose>
+							<when
+								test="paging.simpleCondition.searchType eq 'title'">
+								AND INSTR(A.CNB_NM, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+							</when>
+							<when
+								test="paging.simpleCondition.searchType eq 'writer'">
+								AND INSTR(D.NM, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+							</when>
+							<when
+								test="paging.simpleCondition.searchType eq 'content'">
+								AND INSTR(A.CNB_NOTES, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+							</when>
+							<otherwise>
+								AND INSTR(A.CNB_NM, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+								OR INSTR(D.NM, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+								OR INSTR(A.CNB_NOTES, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+							</otherwise>
+						</choose>
+					</if>
+					 ORDER BY A.CNB_NO DESC
+				</where>
+			) F
+		) G
+		<![CDATA[
+			WHERE RNUM >= #{paging.startRow, jdbcType=NUMERIC} AND RNUM <= #{paging.endRow, jdbcType=NUMERIC}
+		]]>
+	</select>
+	
+	<!-- 강의 공지사항 조회 -->
+	<select id="selectLectureNoticeBoardMainList" resultMap="lectureNoticeBoardMap">
+		SELECT A.CNB_NO 
+		     , A.LECT_NO
+		     , A.CNB_NM
+		     , B.LECT_NM
+		     , D.NM
+		     , A.CNB_NOTES
+		     , A.CNB_DT
+		     , A.CNB_INQ
+		     , A.CNB_MAIN_YN
+		FROM LECTURE_NOTICE_BOARD A
+			INNER JOIN LECTURE B ON B.LECT_NO = A.LECT_NO
+			INNER JOIN PROFESSOR C ON C.PROFE_ID = B.PROFE_ID
+			INNER JOIN PERSON D ON D.ID = C.PROFE_ID
+		<where>
+			A.LECT_NO = #{lectNoticeVO.lectNo, jdbcType=VARCHAR}
+			ORDER BY A.CNB_NO DESC
+		</where>
+	</select>
+	
+	<select id="mainBoardCount" resultType="int">
+		SELECT COUNT(CNB_NO)
+		FROM LECTURE_NOTICE_BOARD
+		WHERE LECT_NO = #{lectNo, jdbcType=VARCHAR}
+		AND CNB_MAIN_YN = 'Y'
+	</select>
+		
+		
+		
+	<!-- 전체 페이지수 조회 -->
+	<select id="AbsencePageCount" resultMap="lectureNoticeBoardMap">
+		SELECT COUNT(*)
+		FROM LECTURE_NOTICE_BOARD
+		<if test="cocoCd != null and cocoCd != ''">
+      		WHERE CNB_NO = #{cnbNo}
+    	</if>
+	</select>
+	
+	
+	<!-- 강의 공지사항 등록 -->
+	<insert id="insertLectureNoticeBoard">
+		<selectKey keyProperty="cnbNo" keyColumn="CNB_NO" resultType="String" order="BEFORE">
+		    SELECT 'CNB' || LPAD(SEQ_LECTURE_NOTICE_BOARD.NEXTVAL, 4, '0') AS CNB_NO
+		    FROM DUAL
+		</selectKey>
+		INSERT INTO LECTURE_NOTICE_BOARD
+		(CNB_NO
+			, LECT_NO
+			, CNB_NM
+			, CNB_NOTES
+			, CNB_DT
+			, CNB_INQ
+			, ATCH_FILE_ID
+			, CNB_MAIN_YN)
+		VALUES
+		(#{cnbNo, jdbcType=VARCHAR}
+			, #{lectNo, jdbcType=VARCHAR}
+			, #{cnbNm, jdbcType=VARCHAR}
+			, #{cnbNotes, jdbcType=VARCHAR}
+			, SYSDATE
+			, 0
+			, #{atchFileId, jdbcType=VARCHAR}
+			, #{cnbMainYn, jdbcType=VARCHAR})
+	</insert>
+	
+	<update id="updateLectureNoticeBoard">
+		UPDATE LECTURE_NOTICE_BOARD
+		SET CNB_NM = #{cnbNm, jdbcType=VARCHAR}
+			, CNB_NOTES = #{cnbNotes, jdbcType=VARCHAR}
+			, CNB_MAIN_YN = #{cnbMainYn, jdbcType=VARCHAR}
+		<if test="atchFileId neq null">
+			, ATCH_FILE_ID = #{atchFileId,jdbcType=NUMERIC}
+		</if>
+		WHERE CNB_NO = #{cnbNo, jdbcType=VARCHAR}
+	</update>
+
+	<!-- 강의 공지사항 접속시 조회수 증가 -->
+	<update id="updateCnbInq">
+		UPDATE LECTURE_NOTICE_BOARD
+		SET CNB_INQ = CNB_INQ + 1
+		WHERE CNB_NO = #{cnbNo, jdbcType=VARCHAR}	
+	</update>
+
+	<delete id="deleteLectureNoticeBoard">
+		DELETE 
+		FROM LECTURE_NOTICE_BOARD
+		WHERE CNB_NO = #{cnbNo, jdbcType=VARCHAR}
+	</delete>
+
+
+</mapper>

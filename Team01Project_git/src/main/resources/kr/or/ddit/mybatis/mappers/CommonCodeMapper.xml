@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="kr.or.ddit.yguniv.commons.dao.CommonCodeMapper">
+	<select id="getCodeList" resultType="CommonCodeVO">
+		SELECT COCO_CD, PAR_COCO_CD, COCO_STTS
+		FROM COMMON_CODE
+		WHERE PAR_COCO_CD = #{parCocoCd}
+		AND USE_YN = 'Y'
+		ORDER BY OUTPT_ORDR
+	</select>
+	
+	<select id="getClassRoomList" resultType="ClassRoomVO">
+		SELECT CROOM_CD	/* 강의실코드 */
+			, CROOM_NM	/* 강의실명 */
+			, CROOM_PSTN	/* 강의실건물,호실 */
+			, CROOM_TNOPE	/* 강의실수용인원 */
+		FROM CLASS_ROOM
+		WHERE CROOM_YN = 'Y'
+	</select>
+	
+	<select id="getSemesterList" resultType="SemesterVO">
+		<choose>
+			<when test="@org.apache.commons.lang3.StringUtils@isNotBlank(id)">
+				SELECT DISTINCT(SEMSTR_NO)	/* 학기번호 */
+				FROM LECTURE
+				WHERE PROFE_ID = #{id, jdbcType=VARCHAR}
+			</when>
+			<otherwise>
+				SELECT SEMSTR_NO	/* 학기번호 */
+				, SEMSTR_YN	/* 현재진행학기여부 */
+				FROM SEMESTER
+			</otherwise>
+		</choose>
+		ORDER BY SEMSTR_NO DESC
+	</select>
+	
+	<select id="getSubjectList" resultType="SubjectVO">
+		SELECT 
+			SUB_NO	/* 과목번호 */
+			, SUB_NM	/* 과목명 */
+			, SUB_INFO	/* 과목설명 */
+			, SUB_FICD_CD	/* 과목분류코드 */
+			, GRADE_CD	/* 학년코드 */
+		FROM SUBJECT
+		WHERE USE_YN = 'Y'
+		ORDER BY SUB_NM
+	</select>
+	
+	<resultMap type="EducationTimeTableCodeVO" id="educationTimeTable" autoMapping="true">
+		<association property="commonCodeVO" javaType="CommonCodeVO" autoMapping="true"/>
+	</resultMap>
+	<select id="getEducationTimeTableCodeList" resultMap="educationTimeTable">
+		SELECT
+			EDC_TIME_CD	/* 교시코드 */
+			, (SELECT COCO_STTS
+				FROM COMMON_CODE
+				WHERE EDC_TIME_CD = COCO_CD) AS COCO_STTS	/* 교시명 */
+			, BEGIN_TIME	/* 시작시간 */
+			, END_TIME	/* 종료시간 */
+		FROM EDUCATION_TIME_TABLE_CODE
+		ORDER BY OUTPT_ORDR
+	</select>
+	<select id="getDepartmentList" resultType="DepartmentVO">
+		SELECT
+			DEPT_NO	/* 학과번호 */
+			, COLLE_NO	/* 학부번호 */
+			, DEPT_NM	/* 학과명 */
+		FROM DEPARTMENT
+		WHERE USE_YN = 'Y'
+	</select>
+	
+	<select id="getEmployeeDeptList" resultType="EmployeeVO"> 
+		SELECT
+		    EMP_ID,
+		    EMP_DEPT,
+		    EMP_JBGD,
+		    EMP_CD
+		FROM
+		    EMPLOYEE
+				
+	
+	</select>
+	
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

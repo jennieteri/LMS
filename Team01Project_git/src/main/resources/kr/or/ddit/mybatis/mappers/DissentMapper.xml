@@ -1,0 +1,367 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.yguniv.dissent.dao.DissentMapper">
+
+<resultMap type="ScoreFormalObjectionVO" id="scoreMap" autoMapping="true">
+	<association property="attenVO" javaType="AttendeeVO" autoMapping="true">
+		<association property="studentVO" javaType="StudentVO" autoMapping="true">
+			<result property="gradeCd" column="GRADE_CD"/>
+		</association>
+	</association>
+	<association property="lectVO" javaType="LectureVO" autoMapping="true"></association>
+</resultMap>
+
+<resultMap type="ScoreFormalObjectionVO" id="profeMap">
+	<association property="lectVO" javaType="LectureVO" autoMapping="true"></association>
+	<association property="studentVO" javaType="StudentVO" autoMapping="true"></association>
+	<association property="personVO" javaType="PersonVO" autoMapping="true">
+		<result column="NM" property="nm"/>
+	</association>
+</resultMap>
+
+<resultMap type="ScoreFormalObjectionVO" id="attenScoreMap">
+    <result property="lectNo" column="LECT_NO"/>
+    <result property="stuId" column="STU_ID"/>
+    <result property="objcCn" column="OBJC_CN"/>
+    <result property="answerCn" column="ANSWER_CN"/>
+
+    <association property="lectVO" javaType="LectureVO" autoMapping="true"/>
+    <association property="attenVO" javaType="AttendeeVO" autoMapping="true"/>
+    <association property="personVO" javaType="PersonVO" autoMapping="true"/>
+    <association property="semstrVO" javaType="SemesterVO" autoMapping="true"/>
+    <association property="studentVO" javaType="StudentVO" autoMapping="true"/>
+</resultMap>
+
+<sql id="selectFrag">
+		<trim prefix="WHERE" prefixOverrides="AND"><!--  조건을 만족하면 AND를 지우고 WHERE을 붙힘-->
+				<if test="paging neq null and paging.detailCondition neq null">
+					<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(paging.detailCondition.prodLgu)">
+						AND PROD_LGU=#{paging.detailCondition.prodLgu}
+					</if>
+					<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(paging.detailCondition.prodBuyer)">
+						AND PROD_BUYER=#{paging.detailCondition.prodBuyer}
+					</if>
+					<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(paging.detailCondition.prodName)">
+						AND INSTR(PROD_NAME,#{paging.detailCondition.prodName})>0
+					</if>
+				</if>
+			</trim>
+	</sql>
+
+
+<select id="selectDissentList" resultMap="scoreMap">
+	SELECT B.*
+	FROM
+	(
+		SELECT ROWNUM RNUM ,A.*
+		FROM
+		(
+    SELECT
+	    A.ID,A.NM,C.GRADE_CD,B.ATTEN_ATND_SCORE,B.ASSIG_SCORE,B.TEST_SCORE,B.ATTEN_SCORE,D.LECT_NM
+        ,E.OBJC_CN,E.ANSWER_CN,D.LECT_NO,E.STU_ID
+    FROM
+	    PERSON A   INNER JOIN ATTENDEE B ON A.ID = B.STU_ID
+	               INNER JOIN STUDENT C ON A.ID = C.STU_ID
+	               INNER JOIN LECTURE D ON B.LECT_NO = D.LECT_NO
+                   INNER JOIN SCORE_FORMAL_OBJECTION E ON A.ID = E.STU_ID
+    WHERE E.ANSWER_CN is NULL 
+    ) A
+	)B
+	<where> <!-- if절의 조건을 만족하면 where 절을 붙히며 쿼리를 만듬 -->
+		<if test="paging neq null" > <!-- null이 아니면 -->
+			<![CDATA[
+				RNUM >= #{paging.startRow} AND RNUM <=#{paging.endRow}
+			]]>
+		</if>
+	</where>
+	
+</select>
+
+
+<select id="selectProfeDissentList" resultMap="profeMap">
+
+SELECT B.*
+	FROM
+	(
+		SELECT ROWNUM RNUM ,A.*
+		FROM
+		(
+			SELECT
+			    PS.NM /*이의 신청을 등록한학생의 이름*/
+			    , L.LECT_NO
+			    , L.LECT_NM
+			    , PS.ID
+			    , S.OBJC_CN
+			    , S.ANSWER_CN
+			    , FN_COCO_STTS(ST.DEPT_CD) AS DEPT_CD
+			    , FN_COCO_STTS(ST.GRADE_CD) AS GRADE_CD
+			FROM 
+			    PROFESSOR P INNER JOIN LECTURE L ON P.PROFE_ID = L.PROFE_ID
+			                INNER JOIN SCORE_FORMAL_OBJECTION S ON L.LECT_NO = S.LECT_NO 
+			                INNER JOIN PERSON PS ON S.STU_ID = PS.ID
+			                INNER JOIN STUDENT ST ON ST.STU_ID=S.STU_ID
+			WHERE 
+			   P.PROFE_ID=#{profeId} 
+			     and L.LECT_NO=#{lectNo}
+   		)A
+	)B
+	<where> <!-- if절의 조건을 만족하면 where 절을 붙히며 쿼리를 만듬 -->
+		<if test="paging neq null" > <!-- null이 아니면 -->
+			<![CDATA[
+				RNUM >= #{paging.startRow} AND RNUM <=#{paging.endRow}
+			]]>
+		</if>
+	</where>
+  
+   
+</select>
+<resultMap type="ScoreFormalObjectionVO" id="scoreAttendMap" autoMapping="true">
+    <id property="lectNo" column="LECT_NO"/>
+    <id property="stuId" column="STU_ID"/>
+    <result property="objcCn" column="OBJC_CN"/>
+    <result property="answerCn" column="ANSWER_CN"/>
+    <result property="nm" column="NM"/>
+    <association property="attenVO" javaType="AttendeeVO" autoMapping="true">
+        <id property="lectNo" column="LECT_NO"/>
+        <id property="stuId" column="STU_ID"/>
+        <result property="attenAtndScore" column="ATTEN_ATND_SCORE"/>
+        <result property="assigScore" column="ASSIG_SCORE"/>
+        <result property="prTestScore" column="PR_TEST_SCORE"/>
+        <result property="ftTestScore" column="FT_TEST_SCORE"/>
+        <result property="etcScore" column="ETC_SCORE"/>
+        <association property="studentVO" javaType="StudentVO" autoMapping="true">
+            <result property="gradeCd" column="GRADE_CD"/>
+        </association>
+    </association>
+    <association property="lectVO" javaType="LectureVO" autoMapping="true">
+        <id property="lectNo" column="LECT_NO"/>
+        <result property="lectNm" column="LECT_NM"/>
+        <result property="lectScore" column="LECT_SCORE"/>
+        <collection property="lesVo" ofType="LectureEvaluationStandardVO" autoMapping="true">
+            <id property="lectNo" column="LECT_NO"/>
+            <id property="evlStdrCd" column="EVL_STDR_CD"/>
+            <result property="rate" column="RATE"/>
+        </collection>
+    </association>
+</resultMap>
+
+<select id="selectDissentOne" resultMap="scoreAttendMap">
+SELECT
+    S.LECT_NO,
+    A.STU_ID,
+    S.OBJC_CN,
+    S.ANSWER_CN,
+    A.ATTEN_ATND_SCORE,
+    A.ASSIG_SCORE,
+    A.PR_TEST_SCORE,
+    A.FT_TEST_SCORE,
+    A.ETC_SCORE,
+    P.NM,
+    L.LECT_NM,
+    LES.RATE,
+    LES.EVL_STDR_CD,
+    L.LECT_SCORE
+FROM 
+    SCORE_FORMAL_OBJECTION S 
+    INNER JOIN ATTENDEE A ON S.STU_ID = A.STU_ID AND S.LECT_NO = A.LECT_NO
+    INNER JOIN LECTURE L ON S.LECT_NO = L.LECT_NO
+    INNER JOIN LECTURE_EVALUATION_STANDARD LES ON L.LECT_NO = LES.LECT_NO
+    INNER JOIN PERSON P ON S.STU_ID = P.ID
+WHERE 
+    S.STU_ID = #{stuId}
+    AND S.LECT_NO = #{lectNo}
+</select>
+
+<select id="selectAttendeeDissentOne" resultType="ScoreFormalObjectionVO">
+
+SELECT
+    lect_no,
+    stu_id,
+    objc_cn,
+    answer_cn
+FROM
+    score_formal_objection
+where 
+    stu_id=#{stuId}
+    and lect_no = #{lectNo}
+
+
+</select>
+
+
+<insert id="insertDissent">
+	
+	INSERT INTO SCORE_FORMAL_OBJECTION (
+	    LECT_NO, STU_ID, OBJC_CN
+	) VALUES (
+	    #{lectNo}, #{stuId}, #{objcCn}
+	)
+	
+</insert>
+
+
+
+<update id="updateAttendee">
+
+UPDATE ATTENDEE
+SET
+    ATTEN_ATND_SCORE = #{attenAtndScore,jdbcType=DOUBLE}
+    ,ASSIG_SCORE = #{assigScore}
+    ,PR_TEST_SCORE = #{prTestScore}  
+    ,FT_TEST_SCORE=#{ftTestScore}
+    ,ETC_SCORE=#{etcScore}
+WHERE
+    LECT_NO = #{lectNo}  AND STU_ID = #{stuId}
+
+</update>
+
+<update id="updateDissent">
+ UPDATE SCORE_FORMAL_OBJECTION
+SET
+    ANSWER_CN = #{answerCn}  
+WHERE
+    LECT_NO = #{lectNo}  AND STU_ID = #{stuId}
+ 
+</update>
+
+<!-- <delete id="deleteDissent"> -->
+
+<!-- DELETE  -->
+<!--  FROM SCORE_FORMAL_OBJECTION -->
+
+<!-- WHERE -->
+<!--         LECT_NO = :V0 -->
+
+<!-- </delete> -->
+
+<select id="selectSemesterList" resultType="SemesterVO">
+	SELECT SEMSTR_NO FROM SEMESTER
+	
+</select>
+
+<resultMap type="LectureVO" id="lectProfeList">
+	<association property="professorVO" javaType="ProfessorVO">
+<!-- 		<association property="person" javaType="PersonVO"> -->
+<!-- 		</association> -->
+	</association>
+</resultMap>
+
+<select id="selectLectureList" resultType="LectureVO">
+SELECT
+    L.LECT_NO,L.LECT_NM,PE.NM
+FROM
+    LECTURE L INNER JOIN PROFESSOR P ON L.PROFE_ID = P.PROFE_ID
+              INNER JOIN PERSON PE ON P.PROFE_ID = PE.ID
+ORDER BY L.LECT_NO,L.LECT_NM,PE.NM
+</select>	
+
+<select id="selectAttenLectList" resultMap="attenScoreMap">
+	
+    	SELECT 
+    S.STU_ID, P.NM, SEM.SEMSTR_NO,
+    A.ATTEN_ATND_SCORE,A.ASSIG_SCORE
+    ,A.PR_TEST_SCORE,A.FT_TEST_SCORE,
+    L.LECT_NM,L.LECT_NO,L.LECT_SCORE
+    ,sfo.*
+FROM 
+    STUDENT S INNER JOIN PERSON P ON S.STU_ID = P.ID
+              INNER JOIN ATTENDEE A ON S.STU_ID = A.STU_ID
+              INNER JOIN LECTURE L ON A.LECT_NO = L.LECT_NO
+              INNER JOIN SEMESTER SEM ON L.SEMSTR_NO = SEM.SEMSTR_NO
+              LEFT OUTER JOIN SCORE_FORMAL_OBJECTION sfo on sfo.lect_no = a.lect_no and sfo.stu_id = s.stu_id
+WHERE 
+    S.STU_ID = #{stuId}
+    --수강생의 강의 리스트  현재 이의신청이 등록되지 않은 강의만
+     AND L.LECT_STATUS_CD = 'L03' -- 현재 개강한 상태의 강의들
+     AND sfo.objc_cn is null
+</select>
+
+<select id="selectAttenLectOne" resultMap="attenScoreMap">
+	SELECT 
+    S.STU_ID
+    , P.NM
+    , SEM.SEMSTR_NO
+    , A.ATTEN_ATND_SCORE
+    , A.ASSIG_SCORE
+    , A.PR_TEST_SCORE
+    , A.FT_TEST_SCORE
+    , A.ETC_SCORE
+    , L.LECT_NM
+    , L.LECT_NO
+    , L.LECT_SCORE
+FROM 
+    STUDENT S INNER JOIN PERSON P ON S.STU_ID = P.ID
+              INNER JOIN ATTENDEE A ON S.STU_ID = A.STU_ID
+              INNER JOIN LECTURE L ON A.LECT_NO = L.LECT_NO
+              INNER JOIN SEMESTER SEM ON L.SEMSTR_NO = SEM.SEMSTR_NO
+WHERE 
+       S.STU_ID = #{stuId} 
+    --수강생의 강의 리스트 
+     AND L.LECT_STATUS_CD = 'L03' -- 현재 개강한 상태의 강의들
+     AND L.LECT_NO=#{lectNo}
+</select>
+
+<resultMap type="LectureVO" id="lectureAndProfeNameMap">
+	<association property="professorVO" javaType="ProfessorVO">
+<!-- 		<association property="person" javaType="PersonVO"></association> -->
+	</association>
+	
+</resultMap>
+<select id="selectProfeName" resultMap="lectureAndProfeNameMap">
+
+SELECT
+    L.LECT_NO,L.LECT_NM,PE.NM
+FROM
+    LECTURE L INNER JOIN PROFESSOR P ON L.PROFE_ID = P.PROFE_ID
+              INNER JOIN PERSON PE ON P.PROFE_ID = PE.ID
+WHERE L.LECT_NO=#{lectNo}
+ORDER BY L.LECT_NO,L.LECT_NM,PE.NM
+</select>	
+<select id="selectOneProfeName" resultType="String">
+
+SELECT
+    LECT_NM
+FROM
+    LECTURE L
+WHERE 
+	LECT_NO=#{lectNo}
+</select>	
+
+
+
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

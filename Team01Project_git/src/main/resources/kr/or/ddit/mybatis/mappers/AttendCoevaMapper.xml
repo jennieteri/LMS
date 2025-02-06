@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="kr.or.ddit.yguniv.attendcoeva.dao.AttendCoevaMapper">
+	
+	
+	
+<select id="selectAttenSemesterList" resultType="SemesterVO">
+	--하나의 수강생이 수강기록이 있는 학기만 리스트로 
+	SELECT 
+		  DISTINCT(L.SEMSTR_NO)
+	FROM 
+		  ATTENDEE A
+		           INNER JOIN LECTURE L ON A.LECT_NO = L.LECT_NO
+	WHERE 
+		  STU_ID = #{stuId}
+</select>
+	
+	
+<resultMap type="AttendeeVO" id="selectCoevaListMap" autoMapping="true">
+	<association property="lectureVO" autoMapping="true" javaType="LectureVO">
+		<association property="semesterVO" autoMapping="true" javaType="SemesterVO"></association>
+		<association property="subjectVO" autoMapping="true" javaType="SubjectVO"></association>
+	</association>
+</resultMap>
+	
+<select id="selectCoevaList" resultMap="selectCoevaListMap">
+select 
+    a.lect_no -- 강의 정보
+    , a.stu_id
+    , a.atten_atnd_score
+    , a.assig_score
+    , a.pr_test_score
+    , a.ft_test_score
+    , a.etc_score
+    , a.atten_score
+    , a.atten_coeva
+    , b.semstr_no
+    , b.lect_nm
+    , b.lect_score
+    , d.sub_no  --과목 정보
+    , d.dept_no
+    , d.sub_nm
+    , d.sub_info
+    , d.grade_cd
+    , d.sub_ficd_cd
+    , fn_coco_stts(d.grade_cd) as grade_cd_nm
+    , fn_coco_stts(d.sub_ficd_cd) as sub_ficd_cd_nm
+from 
+    attendee a inner join lecture b on a.lect_no = b.lect_no
+               inner join semester c on b.semstr_no = c.semstr_no
+               inner join subject d on b.sub_no = d.sub_no
+where
+    a.stu_id = #{stuId}     
+     and c.semstr_no = #{semstrNo}
+</select>
+
+<select id="selectMapageList" resultMap="selectCoevaListMap">
+select 
+    a.lect_no -- 강의 정보
+    , a.stu_id
+    , a.atten_atnd_score
+    , a.assig_score
+    , a.pr_test_score
+    , a.ft_test_score
+    , a.etc_score
+    , a.atten_score
+    , a.atten_coeva
+    , b.semstr_no
+    , b.lect_nm
+    , b.lect_score
+    , d.sub_no  --과목 정보
+    , d.dept_no
+    , d.sub_nm
+    , d.sub_info
+    , d.grade_cd
+    , d.sub_ficd_cd
+    , fn_coco_stts(d.grade_cd) as grade_cd_nm
+    , fn_coco_stts(d.sub_ficd_cd) as sub_ficd_cd_nm
+from 
+    attendee a inner join lecture b on a.lect_no = b.lect_no
+               inner join semester c on b.semstr_no = c.semstr_no
+               inner join subject d on b.sub_no = d.sub_no
+where
+    a.stu_id = #{stuId}  
+    and a.atten_coeva is not null
+</select>
+
+<resultMap type="AttendeeVO" id="selectCoevaDetailMap" autoMapping="true">
+	<association property="lectureVO" autoMapping="true" javaType="LectureVO">
+		<association property="semesterVO" autoMapping="true" javaType="SemesterVO"></association>
+		<association property="subjectVO" autoMapping="true" javaType="SubjectVO"></association>
+		<association property="professorVO" autoMapping="true" javaType="ProfessorVO"></association>
+	</association>
+</resultMap>
+
+<select id="selectCoevaDetail" resultMap="selectCoevaDetailMap">
+select
+    a.lect_no -- 강의 정보
+    , a.stu_id
+    , a.atten_atnd_score
+    , a.assig_score
+    , a.pr_test_score
+    , a.ft_test_score
+    , a.etc_score
+    , a.atten_score
+    , a.atten_coeva
+    , b.semstr_no
+    , b.lect_nm
+    , b.lect_score
+    , d.sub_no  --과목 정보
+    , d.dept_no
+    , d.sub_nm
+    , d.sub_info
+    , d.grade_cd
+    , d.sub_ficd_cd
+    , fn_coco_stts(d.grade_cd) as grade_cd_nm
+    , fn_coco_stts(d.sub_ficd_cd) as sub_ficd_cd_nm
+    , f.id
+    , f.nm
+from 
+    attendee a inner join lecture b on a.lect_no = b.lect_no
+               inner join semester c on b.semstr_no = c.semstr_no
+               inner join subject d on b.sub_no = d.sub_no
+               inner join professor e on b.profe_id = e.profe_id
+               inner join person f on e.profe_id = f.id
+where
+    
+     a.stu_id = #{stuId}     
+	     and c.semstr_no = #{semstrNo}
+	     and a.lect_no =#{lectNo}
+</select>
+
+
+<update id="updateCoeva" parameterType="AttendeeVO">
+
+	UPDATE attendee
+SET
+    
+     atten_coeva = #{aVo.attenCoeva}
+WHERE
+     stu_id = #{aVo.stuId} 
+    AND   lect_no = #{aVo.lectNo}
+</update>
+	
+<select id="selectCoevaOne" resultType="AttendeeVO">
+select
+    a.lect_no -- 강의 정보
+    , a.stu_id
+    , a.atten_atnd_score
+    , a.assig_score
+    , a.pr_test_score
+    , a.ft_test_score
+    , a.etc_score
+    , a.atten_score
+    , a.atten_coeva
+    , b.semstr_no
+    , b.lect_nm
+    , b.lect_score
+    , d.sub_no  --과목 정보
+    , d.dept_no
+    , d.sub_nm
+    , d.sub_info
+    , d.grade_cd
+    , d.sub_ficd_cd
+    , fn_coco_stts(d.grade_cd) as grade_cd_nm
+    , fn_coco_stts(d.sub_ficd_cd) as sub_ficd_cd_nm
+  
+from 
+    attendee a inner join lecture b on a.lect_no = b.lect_no
+               inner join semester c on b.semstr_no = c.semstr_no
+               inner join subject d on b.sub_no = d.sub_no
+where
+     a.stu_id = #{stuId} 
+	     and a.lect_no =#{lectNo}
+
+</select>	
+	
+<select id="selectLectureEvaluationStandardOne" resultType="LectureEvaluationStandardVO">
+
+
+select
+    *
+from 
+    LECTURE_EVALUATION_STANDARD 
+where
+    lect_no = #{lectNo}
+</select>	
+	
+<update id="updateAttenScore" parameterType="AttendeeVO">
+UPDATE attendee
+SET
+    atten_score =  #{aVo.attenScore}
+WHERE
+     stu_id =  #{aVo.stuId}
+	     and lect_no = #{aVo.lectNo}
+	     
+</update>	
+
+
+	
+<!-- 교수 파트 -->	
+	
+<select id="selectProfeSemesterList"  resultType="SemesterVO">
+
+	SELECT 
+		  DISTINCT(L.SEMSTR_NO)
+	FROM 
+		  ATTENDEE A
+		           INNER JOIN LECTURE L ON A.LECT_NO = L.LECT_NO
+	WHERE 
+		  L.PROFE_ID = #{profeId}
+
+</select>
+	
+<resultMap type="AttendeeVO" id="selectProfeCoevaListMap" autoMapping="true">
+	<association property="lectureVO" autoMapping="true" javaType="LectureVO">
+		<association property="semesterVO" autoMapping="true" javaType="SemesterVO"></association>
+	</association>
+</resultMap>
+	
+<select id="selectProfeCoevaList" resultMap="selectProfeCoevaListMap">
+	
+select
+    distinct
+    b.lect_no
+    , b.profe_id
+    , b.sub_no
+    , b.lect_status_cd
+    , b.semstr_no
+    , b.lect_score
+    , b.lect_nm
+    , b.lect_session
+    , b.lect_atten_nope
+    , b.lect_en_nope
+    , b.lect_online_yn
+    , b.lect_descr
+from attendee a inner join lecture b on a.lect_no = b.lect_no
+                inner join semester e on e.semstr_no = b.semstr_no
+
+where b.profe_id=#{profeId}
+   and e.semstr_no =#{semstrNo}
+</select>	
+	
+<select id="selectProfeCoevaDetail" resultMap="selectProfeCoevaListMap">
+select
+    a.atten_coeva
+    , b.lect_no
+    , b.profe_id
+    , b.sub_no
+    , b.lect_status_cd
+    , b.semstr_no
+    , b.lect_score
+    , b.lect_nm
+    , b.lect_session
+    , b.lect_atten_nope
+    , b.lect_en_nope
+    , b.lect_online_yn
+    , b.lect_descr
+from attendee a inner join lecture b on a.lect_no = b.lect_no
+                inner join semester e on e.semstr_no = b.semstr_no
+
+where b.profe_id=#{profeId}
+   and e.semstr_no =#{semstrNo}
+   and a.lect_no = #{lectNo}
+   and a.atten_coeva is not null
+
+</select>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+</mapper>

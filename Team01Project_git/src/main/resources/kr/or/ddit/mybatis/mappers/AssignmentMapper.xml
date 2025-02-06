@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.yguniv.assignment.dao.AssignmentMapper">
+<!-- Assignment Table -->
+	<sql id="columns">
+	/*과제번호*/			ASSIG_NO 
+	/*강의번호*/			,LECT_NO
+	/*과제명*/			,ASSIG_NM
+	/*내용*/				,ASSIG_NOTES
+	/*배점*/				,ASSIG_SCORE
+	/*등록일자*/			,ASSIG_DATE
+	/*제출마감일자*/		,ASSIG_ED	
+	/*파일그룹번호*/		,ATCH_FILE_ID
+	/*피어리뷰여부*/		,PEER_YN
+	</sql>
+
+<!-- 검색 조건 -->
+	<sql id="searchFrag">
+		<where>
+			<if
+				test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+				<choose>
+					<when
+						test="simpleCondition.searchType eq 'title'">
+						INSTR(ASSIG_NM, #{simpleCondition.searchWord}) > 0
+					</when>
+					<when
+						test="simpleCondition.searchType eq 'content'">
+						INSTR(ASSIG_NOTES, #{simpleCondition.searchWord}) > 0
+					</when>
+					<otherwise>
+						INSTR(ASSIG_NM, #{simpleCondition.searchWord}) > 0 
+						OR INSTR(ASSIG_NOTES, #{simpleCondition.searchWord}) > 0
+					</otherwise>
+				</choose>
+			</if>
+		</where>
+	</sql>
+
+<resultMap type="AssignmentVO" id="assignmentMap" autoMapping="true">
+	<id property="assigNo" column="ASSIG_NO" />
+	<id property="lectNo" column="LECT_NO" />
+	<result property="atchFileId" column="ATCH_FILE_ID" />
+	<association property="atchFile" column="ATCH_FILE_ID"
+			select="kr.or.ddit.yguniv.atch.dao.AtchFileMapper.selectAtchFileEnable"/>
+	<association property="lecture" javaType="LectureVO" 
+	select="checkLecture" column="LECT_NO" />
+	<collection property="assignmentsubmissionList" ofType="AssignmentSubmissionVO" select="kr.or.ddit.yguniv.assignmentSubmission.dao.AssignmentSubmissionMapper.selectAssignmentSubmissionListWithAssigNo" column="ASSIG_NO"/>
+</resultMap>
+
+
+<insert id="insertAssignment">
+	<selectKey order="BEFORE" resultType="String" keyProperty="assigNo">
+		SELECT SEQ_ASSIGNMENT.NEXTVAL FROM DUAL
+	</selectKey>
+	INSERT INTO ASSIGNMENT(
+		ASSIG_NO
+		,LECT_NO
+		,ASSIG_NM
+		,ASSIG_NOTES
+		,ASSIG_SCORE
+		,ASSIG_DATE
+		,ASSIG_ED
+		,ATCH_FILE_ID
+		,PEER_YN
+	) VALUES (
+		#{assigNo,jdbcType=VARCHAR}
+		, #{lectNo,jdbcType=VARCHAR}
+		, #{assigNm,jdbcType=VARCHAR}
+		, #{assigNotes,jdbcType=VARCHAR}
+		, #{assigScore,jdbcType=NUMERIC}
+		, TO_CHAR(TO_DATE(#{assigDate, jdbcType=VARCHAR},'YYYY-MM-DD'), 'YYYYMMDD')
+		<if test="assigEd eq null">
+		, TO_CHAR(TO_DATE(SYSDATE, 'YYYY-MM-DD'),'YYYYMMDD')
+		</if>
+		<if test="assigEd neq null">
+		, TO_CHAR(TO_DATE(#{assigEd, jdbcType=VARCHAR},'YYYY-MM-DD'), 'YYYYMMDD')
+		</if>
+		, #{atchFileId,jdbcType=NUMERIC}
+		, #{peerYn,jdbcType=VARCHAR}
+	)
+
+</insert>
+
+
+<select id="checkLecture" resultType="LectureVO">
+	SELECT 
+		PROFE_ID
+		,SUB_NO
+		,LECT_STATUS_CD
+		,SEMSTR_NO
+		,LECT_SCORE
+		,LECT_NM
+		,LECT_SESSION
+		,LECT_ATTEN_NOPE
+		,LECT_EN_NOPE
+		,LECT_ONLINE_YN
+		,LECT_DESCR
+		,LECT_RETURN
+		,LECT_ABL
+	FROM LECTURE
+	WHERE LECT_NO = #{lectNo,jdbcType=VARCHAR}
+</select>
+
+<select id="selectAssignmentList" resultMap="assignmentMap">
+	SELECT B.*
+	FROM  (
+		    SELECT 
+		        ROWNUM AS RNUM
+		        , A.*
+		    FROM (
+		        SELECT 
+			        a.ASSIG_NO
+			        ,a.LECT_NO
+			        ,a.ASSIG_NM
+			        ,a.ASSIG_NOTES
+			        ,a.ASSIG_SCORE
+			        ,a.ASSIG_DATE
+			        ,a.ATCH_FILE_ID
+			        ,a.PEER_YN
+			        ,a.ASSIG_ED
+			        ,l.LECT_NM AS LECT_NM
+			    FROM 
+			        ASSIGNMENT a
+			    INNER JOIN
+			        LECTURE l
+			    ON
+			        a.LECT_NO = l.LECT_NO
+			    WHERE 
+		        	a.LECT_NO = #{lectNo, jdbcType=VARCHAR} /*해당 강의만 리스팅*/    
+			    ORDER BY 
+			        a.ASSIG_NO ASC /*정렬 기준*/
+			)A
+	)B
+	ORDER BY RNUM DESC
+</select>
+
+<select id="selectAssignment" resultMap="assignmentMap">
+	SELECT
+	    a.ASSIG_NO
+	    ,a.LECT_NO
+	    ,a.ASSIG_NM
+	    ,a.ASSIG_NOTES
+	    ,a.ASSIG_SCORE
+	    ,a.ASSIG_DATE
+	    ,a.ASSIG_ED
+	    ,a.ATCH_FILE_ID
+	    ,a.PEER_YN
+	    ,l.LECT_NM AS LECT_NM
+	FROM
+	    ASSIGNMENT a
+	INNER JOIN
+	    LECTURE l
+	ON
+	    a.LECT_NO = l.LECT_NO
+	WHERE
+	    a.ASSIG_NO = TO_CHAR(#{assigNo,jdbcType=VARCHAR})
+</select>
+
+<select id="selectAssignmentListPaging" resultType="AssignmentVO">
+	SELECT
+			C.*
+	FROM(
+		SELECT B.*
+				,ROWNUM RNUM
+		FROM  (
+			    SELECT 
+			        ROWNUM AS TEMP_RNUM
+			        , A.*
+			    FROM (
+			        SELECT 
+				        a.ASSIG_NO
+				        ,a.LECT_NO
+				        ,a.ASSIG_NM
+				        ,a.ASSIG_NOTES
+				        ,a.ASSIG_SCORE
+				        ,a.ASSIG_DATE
+				        ,a.ATCH_FILE_ID
+				        ,a.PEER_YN
+				        ,a.ASSIG_ED
+				        ,l.LECT_NM AS LECT_NM
+				    FROM 
+				        ASSIGNMENT a
+				    INNER JOIN
+				        LECTURE l
+				    ON
+				        a.LECT_NO = l.LECT_NO
+				    WHERE 
+			        	a.LECT_NO = #{lectNo, jdbcType=VARCHAR} /*해당 강의만 리스팅*/    
+				    ORDER BY 
+				        a.ASSIG_NO DESC /*정렬 기준*/
+				)A
+				ORDER BY TEMP_RNUM DESC
+		)B
+		
+	)C
+	
+	<![CDATA[
+	WHERE 
+	    TEMP_RNUM >= #{paging.startRow} AND TEMP_RNUM <= #{paging.endRow}
+    ]]>
+    ORDER BY RNUM DESC
+    
+</select>
+
+<select id="selectTotalRecord" resultType="int">
+	SELECT 
+			COUNT(ASSIG_NO)
+	FROM 
+			ASSIGNMENT
+	WHERE
+			LECT_NO = #{lectNo, jdbcType=VARCHAR}
+	<where>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(paging.simpleCondition.searchWord)">
+			<choose>
+				<when test="simpleCondition.searchType eq 'title'">
+					INSTR(ASSIG_NM, #{paging.simpleCondition.searchWord}) > 0
+				</when>
+				<when test="simpleCondition.searchType eq 'content'">
+					INSTR(ASSIG_NOTES, #{paging.simpleCondition.searchWord}) > 0
+				</when>
+				<otherwise>
+					INSTR(ASSIG_NM, #{paging.simpleCondition.searchWord}) > 0 
+					OR INSTR(ASSIG_NOTES, #{paging.simpleCondition.searchWord}) > 0
+				</otherwise>
+			</choose>
+		</if>
+	</where>
+	
+	
+	
+	
+	
+	
+</select>
+
+<update id="updateAssignment">
+	UPDATE ASSIGNMENT
+	SET
+		ASSIG_NM = #{assigNm,jdbcType=VARCHAR}
+		,ASSIG_NOTES = #{assigNotes,jdbcType=VARCHAR}
+		,ASSIG_SCORE = #{assigScore,jdbcType=NUMERIC}
+		<if test="assigDate eq null">
+		, TO_CHAR(SYSDATE, 'YYYYMMDD')
+		</if>
+		<if test="assigDate neq null">
+		, ASSIG_DATE = TO_CHAR(TO_DATE(#{assigDate, jdbcType=VARCHAR},'YYYY-MM-DD'), 'YYYYMMDD')
+		</if>
+		, ASSIG_ED = TO_CHAR(TO_DATE(#{assigEd, jdbcType=VARCHAR},'YYYY-MM-DD'), 'YYYYMMDD')
+		
+		<if test="atchFileId neq null">
+				, ATCH_FILE_ID = #{atchFileId,jdbcType=NUMERIC}
+		</if>
+		,PEER_YN = #{peerYn,jdbcType=VARCHAR}
+		
+	WHERE ASSIG_NO = TO_CHAR(#{assigNo,jdbcType=VARCHAR})	
+</update>
+
+<delete id="deleteAssignment">
+	DELETE
+	FROM ASSIGNMENT
+	WHERE ASSIG_NO = #{assigNo,jdbcType=VARCHAR}
+	
+</delete>
+
+<select id="checkSubmission" resultType="int">
+	SELECT 
+			COUNT(ASSIG_NO)
+	FROM
+			ASSIGNMENT_SUBMISSION
+	WHERE
+			ASSIG_NO =  #{assigNo,jdbcType=VARCHAR}
+	AND
+			STU_ID = #{stuId, jdbcType=VARCHAR}
+	AND
+			ASSUB_YN = 'Y'
+</select>
+
+
+
+</mapper>

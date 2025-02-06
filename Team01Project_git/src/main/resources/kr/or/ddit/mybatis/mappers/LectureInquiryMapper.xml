@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.yguniv.lecture.dao.LectureInquiryMapper">
+	<select id="selectTotalRecord" resultType="int">
+		SELECT COUNT(LIB_NO)
+		FROM LECTURE_INQUIRY_BOARD I
+		INNER JOIN PERSON P ON(I.STU_ID = P.ID)
+		WHERE LECT_NO = #{lectNo, jdbcType=VARCHAR}
+        <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(paging.simpleCondition.searchWord)">
+			<choose>
+				<when
+					test="paging.simpleCondition.searchType eq 'title'">
+					AND INSTR(LIB_SJ, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+				</when>
+				<when
+					test="paging.simpleCondition.searchType eq 'writer'">
+					AND INSTR(NM, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+				</when>
+				<when
+					test="paging.simpleCondition.searchType eq 'content'">
+					AND INSTR(LIB_CN, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+				</when>
+				<otherwise>
+					AND INSTR(LIB_SJ, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0 
+					OR INSTR(NM, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0 
+					OR INSTR(LIB_CN, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+				</otherwise>
+			</choose>
+		</if>
+	</select>
+	<resultMap type="LectureInquiryBoardVO" id="lectureInquiry" autoMapping="true">
+		<id property="libNo" column="LIB_NO"/>
+		<result property="sn" column="SN"/>
+		<association property="studentVO" javaType="StudentVO">
+			<result property="nm" column="STU_NM"/>
+		</association>
+		<association property="professorVO" javaType="ProfessorVO">
+			<id property="id" column="PROFE_ID"/>
+			<result property="nm" column="PROFE_NM"/>
+		</association>
+	</resultMap>
+	<select id="selectLectureInquiryBoardList" resultMap="lectureInquiry">
+		SELECT C.*
+		FROM
+		(
+		    SELECT B.*, ROWNUM AS RNUM		/* 최신 문의부터 1페이지로 자르기 위한 번호 */
+		    FROM 
+		    (
+		        SELECT A.*, ROWNUM AS SN	/* 강의에 해당하는 문의 순번 */
+		        FROM 
+		        (
+		            SELECT I.LIB_NO			/* 문의번호 */
+		                , I.STU_ID			/* 학생번호 */
+		                , P.NM AS STU_NM	/* 학생이름 */
+		                , I.LIB_SJ			/* 문의제목 */
+		                , I.LIB_CN			/* 문의내용 */
+		                , I.LIB_DT			/* 문의시간 */
+		                , I.LIB_ANS_DT		/* 문의답변시간 */
+		                , I.LIB_ANS_CN		/* 문의답변내용 */
+		                , I.LIB_HIT			/* 조회수 */
+		            FROM LECTURE_INQUIRY_BOARD I
+		            INNER JOIN PERSON P ON(I.STU_ID = P.ID)
+		            WHERE I.LECT_NO = #{lectNo, jdbcType=VARCHAR}
+		            ORDER BY I.LIB_NO
+		        ) A
+		        <where>
+			        <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(paging.simpleCondition.searchWord)">
+						<choose>
+							<when
+								test="paging.simpleCondition.searchType eq 'title'">
+								INSTR(LIB_SJ, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+							</when>
+							<when
+								test="paging.simpleCondition.searchType eq 'writer'">
+								INSTR(STU_NM, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+							</when>
+							<when
+								test="paging.simpleCondition.searchType eq 'content'">
+								INSTR(LIB_CN || LIB_ANS_CN, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+							</when>
+							<otherwise>
+								INSTR(LIB_SJ, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0 
+								OR INSTR(STU_NM, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0 
+								OR INSTR(LIB_CN || LIB_ANS_CN, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+							</otherwise>
+						</choose>
+					</if>
+				</where>
+		        ORDER BY SN DESC
+		    ) B
+		) C
+		<![CDATA[
+		WHERE RNUM >= #{paging.startRow, jdbcType=NUMERIC} AND RNUM <= #{paging.endRow, jdbcType=NUMERIC}
+		]]>
+	</select>
+	<select id="selectLectureInquiryBoard" resultMap="lectureInquiry">
+		SELECT I.LIB_NO			/* 문의번호 */
+		    , I.STU_ID			/* 학생번호 */
+		    , S.NM AS STU_NM	/* 학생이름 */
+		    , I.LIB_SJ			/* 문의제목 */
+		    , I.LIB_CN			/* 문의내용 */
+		    , I.LIB_DT			/* 문의등록일시 */
+		    , I.PROFE_ID		/* 교수번호 */
+		    , P.NM AS PROFE_NM	/* 교수이름 */
+		    , I.LIB_ANS_CN		/* 답변내용 */
+		    , I.LIB_ANS_DT		/* 답변일시 */
+		    , I.LIB_HIT			/* 조회수 */
+		FROM LECTURE_INQUIRY_BOARD I
+		INNER JOIN PERSON S ON(I.STU_ID = S.ID)
+		LEFT OUTER JOIN PERSON P ON(I.PROFE_ID = P.ID)
+		WHERE LIB_NO = #{libNo, jdbcType=NUMERIC}
+	</select>
+	<update id="incrementHit">
+		UPDATE LECTURE_INQUIRY_BOARD 
+		SET 
+			LIB_HIT = LIB_HIT + 1 
+		WHERE LIB_NO = #{libNo, jdbcType=NUMERIC}
+	</update>
+	<insert id="insertLectureInquiryBoard">
+		<selectKey keyProperty="libNo" order="BEFORE" resultType="long">
+			SELECT SEQ_LIB.NEXTVAL
+			FROM DUAL
+		</selectKey>
+		INSERT INTO LECTURE_INQUIRY_BOARD(
+		    LIB_NO			/* 문의번호 */
+		    , LECT_NO		/* 강의번호 */
+		    , STU_ID		/* 학생번호 */
+		    , LIB_SJ		/* 문의제목 */
+		    , LIB_CN		/* 문의내용 */
+		) VALUES (
+		    #{libNo, jdbcType=NUMERIC}
+		    , #{lectNo, jdbcType=VARCHAR}
+		    , #{stuId, jdbcType=VARCHAR}
+		    , #{libSj, jdbcType=VARCHAR}
+		    , #{libCn, jdbcType=VARCHAR}
+		)
+	</insert>
+	<update id="updateLectureInquiryBoard">
+		UPDATE LECTURE_INQUIRY_BOARD
+		SET 
+			LIB_SJ = #{libSj, jdbcType=VARCHAR}			/* 문의제목 */
+		    , LIB_CN = #{libCn, jdbcType=VARCHAR}		/* 문의내용 */
+		WHERE LIB_NO = #{libNo, jdbcType=NUMERIC}
+	</update>
+	<delete id="deleteLectureInquiryBoard">
+		DELETE FROM LECTURE_INQUIRY_BOARD
+		WHERE LIB_NO = #{libNo}
+	</delete>
+	
+	<update id="insertLectureInquiryBoardAnswer">
+		UPDATE LECTURE_INQUIRY_BOARD
+		SET 
+			PROFE_ID = #{profeId, jdbcType=VARCHAR}			/* 교수번호 */
+			, LIB_ANS_CN = #{libAnsCn, jdbcType=VARCHAR}	/* 답변내용 */
+		    , LIB_ANS_DT = SYSDATE							/* 답변일시 */
+		WHERE LIB_NO = #{libNo, jdbcType=NUMERIC}
+	</update>
+	<update id="deleteLectureInquiryBoardAnswer">
+		UPDATE LECTURE_INQUIRY_BOARD
+		SET 
+			PROFE_ID = NULL			/* 교수번호 */
+			, LIB_ANS_CN = NULL		/* 답변내용 */
+		    , LIB_ANS_DT = NULL		/* 답변일시 */
+		WHERE LIB_NO = #{libNo, jdbcType=NUMERIC}
+	</update>
+</mapper>

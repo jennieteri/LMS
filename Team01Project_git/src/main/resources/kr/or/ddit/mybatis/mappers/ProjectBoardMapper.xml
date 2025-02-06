@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="kr.or.ddit.yguniv.projectboard.dao.ProjectBoardMapper">
+	<sql id="columns">
+	PB_NO		/*게시글번호*/
+	, PB_TITLE	/*제목*/
+	, LECT_NO	/*강의번호*/
+	, STU_ID	/*작성자*/
+	, TEAM_CD	/*팀번호*/
+	, PB_CN		/*내용*/
+	, PB_DATE	/*작성일자*/
+	, PB_NOTI	/*공지여부*/
+	, PB_DELYN	/*삭제여부*/
+	, PB_HIT	/*조회수*/
+	, ATCH_FILE_ID	/*첨부파일*/
+	</sql>
+	
+<resultMap type="ProjectBoardVO" id="ProjectBoardMap" autoMapping="true">
+<id property="pbNo" column="PB_NO" />
+<result property="stuId" column="STU_ID"/>
+<result property="atchFileId" column="ATCH_FILE_ID"/>
+<association property="atchFile" column="ATCH_FILE_ID"
+			select="kr.or.ddit.yguniv.atch.dao.AtchFileMapper.selectAtchFileEnable" />
+<association property="projectMember" column="STU_ID" 
+		select="kr.or.ddit.yguniv.projectMember.dao.ProjectMemberMapper.selectProjectMember"/>
+</resultMap>	
+	
+<select id="selectProjectBoard" resultMap="ProjectBoardMap">
+	SELECT
+			A.PB_NO		/*게시글번호*/
+			, A.PB_TITLE	/*제목*/
+			, A.LECT_NO	/*강의번호*/
+			, A.STU_ID	/*작성자*/
+			, A.TEAM_CD	/*팀번호*/
+			, A.PB_CN		/*내용*/
+			, A.PB_DATE	/*작성일자*/
+			, A.PB_NOTI	/*공지여부*/
+			, A.PB_DELYN	/*삭제여부*/
+			, A.PB_HIT	/*조회수*/
+			, A.ATCH_FILE_ID	/*첨부파일*/
+			, B.TEAM_CD
+			, B.LEAD_YN
+			, B.PEER_SCORE
+	FROM
+			PROJECT_BOARD A
+	INNER JOIN
+			PROJECT_MEMBER B
+	ON
+			A.STU_ID = B.STU_ID
+			
+	WHERE 
+			PB_DELYN = 'N'
+	AND
+			PB_NO = #{pbNo, jdbcType=VARCHAR}
+</select>	
+
+<select id="selectProjectBoardList" resultMap="ProjectBoardMap">
+	SELECT B.*
+	FROM (
+	    SELECT 
+	        ROWNUM AS RNUM,
+	        A.PB_NO,         /* 게시글 번호 */
+	        A.PB_TITLE,      /* 제목 */
+	        A.LECT_NO,       /* 강의 번호 */
+	        A.STU_ID,        /* 작성자 */
+	        A.TEAM_CD,       /* 팀 번호 */
+	        A.PB_CN,         /* 내용 */
+	        A.PB_DATE,       /* 작성일자 */
+	        A.PB_NOTI,       /* 공지 여부 */
+	        A.PB_DELYN,      /* 삭제 여부 */
+	        A.PB_HIT,        /* 조회수 */
+	        A.ATCH_FILE_ID,  /* 첨부파일 */
+	        B.TEAM_CD AS MEMBER_TEAM_CD,
+	        B.LEAD_YN,
+	        B.PEER_SCORE
+	    FROM 
+	        PROJECT_BOARD A
+	    INNER JOIN 
+	        PROJECT_MEMBER B
+	    ON 
+	        A.STU_ID = B.STU_ID
+	    WHERE 
+	        A.PB_DELYN = 'N'
+        AND A.TEAM_CD = #{teamCd, jdbcType=VARCHAR}
+			<where>
+				<if
+					test='paging.simpleCondition.searchWord neq null'>
+					<choose>
+						<when
+							test='paging.simpleCondition.searchType eq "title"'>
+							INSTR(PB_TITLE, #{paging.simpleCondition.searchWord}) > 0
+						</when>
+						<when
+							test='paging.simpleCondition.searchType eq "writer"'>
+							 EXISTS (
+					                SELECT 1
+					                FROM PROJECT_MEMBER PM
+					                WHERE PM.STU_ID = PB.STU_ID
+					                  AND INSTR(PM.NAME, #{paging.simpleCondition.searchWord}) > 0
+					            )
+						</when>
+						<when
+							test='paging.simpleCondition.searchType eq "content"'>
+							INSTR(PB_CN, #{paging.simpleCondition.searchWord}) > 0
+						</when>
+						<otherwise>
+							INSTR(PB_TITLE, #{paging.simpleCondition.searchType}) > 0 
+							OR 
+								EXISTS (
+						                SELECT 1
+						                FROM PROJECT_MEMBER PM
+						                WHERE PM.STU_ID = PB.STU_ID
+						                  AND INSTR(PM.NAME, #{paging.simpleCondition.searchWord}) > 0
+						            )
+							OR INSTR(PB_CN, #{paging.simpleCondition.searchWord}) > 0
+						</otherwise>
+					</choose>
+				</if>
+			</where>
+					
+			ORDER BY A.PB_NOTI DESC, A.PB_NO ASC
+		)B
+	<![CDATA[
+		WHERE RNUM >= #{paging.startRow} AND RNUM <= #{paging.endRow}
+	]]>
+	ORDER BY RNUM DESC
+	
+</select>
+
+<select id="selectTotalRecord" resultType="int">
+	SELECT COUNT(PB_NO) FROM PROJECT_BOARD
+	<where>
+		<if
+			test='paging.simpleCondition.searchWord neq null'>
+			<choose>
+				<when
+					test='paging.simpleCondition.searchType eq "title"'>
+					INSTR(PB_TITLE, #{paging.simpleCondition.searchWord}) > 0
+				</when>
+				<when
+					test='paging.simpleCondition.searchType eq "writer"'>
+					 EXISTS (
+			                SELECT 1
+			                FROM PROJECT_MEMBER PM
+			                WHERE PM.STU_ID = PB.STU_ID
+			                  AND INSTR(PM.NAME, #{paging.simpleCondition.searchWord}) > 0
+			            )
+				</when>
+				<when
+					test='paging.simpleCondition.searchType eq "content"'>
+					INSTR(PB_CN, #{paging.simpleCondition.searchWord}) > 0
+				</when>
+				<otherwise>
+					INSTR(PB_TITLE, #{paging.simpleCondition.searchType}) > 0 
+					OR 
+						EXISTS (
+				                SELECT 1
+				                FROM PROJECT_MEMBER PM
+				                WHERE PM.STU_ID = PB.STU_ID
+				                  AND INSTR(PM.NAME, #{paging.simpleCondition.searchWord}) > 0
+				            )
+					OR INSTR(PB_CN, #{paging.simpleCondition.searchWord}) > 0
+				</otherwise>
+			</choose>
+		</if>
+	</where>
+
+</select>
+
+<insert id="insertProjectBoard">
+	<selectKey order="BEFORE" resultType="int" keyProperty="pbNo">
+		SELECT SEQ_PROJECT_BOARD.NEXTVAL FROM DUAL
+	</selectKey>
+	INSERT INTO PROJECT_BOARD(
+	
+		PB_NO		/*게시글번호*/
+		, PB_TITLE	/*제목*/
+		, LECT_NO	/*강의번호*/
+		, STU_ID	/*작성자*/
+		, TEAM_CD	/*팀번호*/
+		, PB_CN		/*내용*/
+		, PB_DATE	/*작성일자*/
+		, PB_NOTI	/*공지여부*/
+		, PB_DELYN	/*삭제여부*/
+		, PB_HIT	/*조회수*/
+		, ATCH_FILE_ID	/*첨부파일*/
+	
+	
+	)VALUES(
+		 #{pbNo,jdbcType=NUMERIC}
+		, #{pbTitle,jdbcType=VARCHAR}
+		, #{lectNo,jdbcType=VARCHAR}
+		, #{stuId,jdbcType=VARCHAR}
+		, #{teamCd,jdbcType=VARCHAR}
+		, #{pbCn,jdbcType=VARCHAR}
+		, TO_CHAR(SYSDATE,'YYYY-MM-DD')
+		, #{pbNoti, jdbcType=VARCHAR}
+		, 'N'
+		, 0
+		, #{atchFileId,jdbcType=NUMERIC}
+	)
+</insert>
+
+<update id="updateProjectBoard">
+	UPDATE PROJECT_BOARD
+	SET
+			 PB_TITLE = #{pbTitle,jdbcType=VARCHAR}	/*제목*/
+			, STU_ID = #{stuId,jdbcType=VARCHAR}	/*작성자*/
+			, PB_CN	= #{pbCn,jdbcType=VARCHAR}	/*내용*/
+			, PB_NOTI =  #{pbNoti,jdbcType=VARCHAR}	/*공지여부*/
+			<if test="atchFileId neq null">
+			, ATCH_FILE_ID = #{atchFileId,jdbcType=NUMERIC} 	/*첨부파일*/
+			</if>
+	WHERE
+			PB_NO = #{pbNo,jdbcType=NUMERIC}
+		
+</update>
+	
+<delete id="deleteProjectBoard">
+	UPDATE PROJECT_BOARD
+	SET
+		PB_DELYN = 'Y'
+	WHERE 
+			PB_NO = #{pbNo,jdbcType=NUMERIC}
+</delete>
+
+<update id="incrementHit">
+	UPDATE PROJECT_BOARD
+	SET
+		PB_HIT = PB_HIT + 1
+	WHERE 
+			PB_NO = #{pbNo,jdbcType=NUMERIC}
+
+</update>
+
+<select id="checkDuplicate" resultType="int">
+	SELECT
+			COUNT(PB_NO)
+	FROM
+			PROJECT_BOARD
+	WHERE
+			TEAM_CD = #{teamCd, jdbcType=VARCHAR}
+</select>
+	
+<select id="selectNoti" resultMap="ProjectBoardMap">
+	SELECT
+			PB_NO		/*게시글번호*/
+			, PB_TITLE	/*제목*/
+			, LECT_NO	/*강의번호*/
+			, STU_ID	/*작성자*/
+			, TEAM_CD	/*팀번호*/
+			, PB_CN		/*내용*/
+			, PB_DATE	/*작성일자*/
+			, PB_NOTI	/*공지여부*/
+			, PB_DELYN	/*삭제여부*/
+			, PB_HIT	/*조회수*/
+			, ATCH_FILE_ID	/*첨부파일*/
+			
+	FROM
+			PROJECT_BOARD
+	WHERE
+			TEAM_CD = #{teamCd, jdbcType=VARCHAR}
+	AND
+			PB_NOTI = 'Y'
+</select>
+
+	
+</mapper>

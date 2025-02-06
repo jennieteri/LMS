@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="kr.or.ddit.yguniv.projectTask.dao.ProjectTaskMapper">
+<sql id="columns">
+
+
+	TASK_NO			/*프로젝트과제번호*/
+	,LECT_NO		/*강의번호*/
+	,TASK_TITLE		/*과제주제*/
+	,TASK_NOTES		/*과제내용*/
+	,TASK_ET		/*과제제출마감일*/
+	,TASK_SCORE		/*배점*/
+	,TASK_STATUS	/*과제진행여부*/
+	,ATCH_FILE_ID	/*첨부파일*/
+	
+	
+</sql>
+
+<resultMap type="ProjectTaskVO" id="ProjectTaskMap">
+	<id property="taskNo" column="TASK_NO"/>
+	<result property="lectNo" column="LECT_NO"/>
+	<result property="atchFileId" column="ATCH_FILE_ID" />
+	<association property="atchFile" column="ATCH_FILE_ID"
+			select="kr.or.ddit.yguniv.atch.dao.AtchFileMapper.selectAtchFileEnable"/>
+	<association property="lecture" column="LECT_NO" 
+			select="kr.or.ddit.yguniv.assignment.dao.AssignmentMapper.checkLecture" />
+	<collection property="projectTaskSubmission" column="TASK_NO" select="selectListTaskSubmissionWithTaskNo" />
+</resultMap>
+
+
+<select id="selectProjectTask" resultMap="ProjectTaskMap">
+	SELECT 
+			TASK_NO			/*프로젝트과제번호*/
+			,LECT_NO		/*강의번호*/
+			,TASK_TITLE		/*과제주제*/
+			,TASK_NOTES		/*과제내용*/
+			,TASK_ET		/*과제제출마감일*/
+			,TASK_SCORE		/*배점*/
+			,TASK_STATUS	/*과제진행여부*/
+			,ATCH_FILE_ID	/*첨부파일*/
+	FROM
+			PROJECT_TASK
+	WHERE 
+			TASK_NO = #{taskNo,jdbcType=VARCHAR}
+	AND
+			TASK_STATUS = 'Y'
+	
+</select>
+
+<select id="selectProjectTasklist" resultMap="ProjectTaskMap">
+	SELECT
+			ROWNUM AS RNUM
+			,TASK_NO			/*프로젝트과제번호*/
+			,LECT_NO		/*강의번호*/
+			,TASK_TITLE		/*과제주제*/
+			,TASK_NOTES		/*과제내용*/
+			,TASK_ET		/*과제제출마감일*/
+			,TASK_SCORE		/*배점*/
+			,TASK_STATUS	/*과제진행여부*/
+			,ATCH_FILE_ID	/*첨부파일*/
+	FROM
+			PROJECT_TASK
+	WHERE
+			LECT_NO = #{lectNo,jdbcType=VARCHAR}
+	AND
+			TASK_STATUS = 'Y'
+</select>
+
+
+<insert id="insertProjectTask">
+	<selectKey order="BEFORE" resultType="String" keyProperty="taskNo">
+		SELECT SEQ_PROJECT_TASK.NEXTVAL FROM DUAL
+	</selectKey>
+	INSERT INTO PROJECT_TASK(
+			TASK_NO			/*프로젝트과제번호*/
+			,LECT_NO		/*강의번호*/
+			,TASK_TITLE		/*과제주제*/
+			,TASK_NOTES		/*과제내용*/
+			,TASK_ET		/*과제제출마감일*/
+			,TASK_SCORE		/*배점*/
+			,TASK_STATUS	/*과제진행여부*/
+			,ATCH_FILE_ID	/*첨부파일*/
+	)VALUES (
+		 #{taskNo,jdbcType=VARCHAR}
+		, #{lectNo,jdbcType=VARCHAR}
+		, #{taskTitle,jdbcType=VARCHAR}
+		, #{taskNotes,jdbcType=VARCHAR}
+		, #{taskEt,jdbcType=VARCHAR}
+		, #{taskScore,jdbcType=NUMERIC}
+		, 'Y'
+		, #{atchFileId,jdbcType=NUMERIC}
+	)
+</insert>
+
+<update id="updateProjectTask">
+	UPDATE PROJECT_TASK
+	SET
+		TASK_TITLE =	#{taskTitle,jdbcType=VARCHAR}
+		,TASK_NOTES =	#{taskNotes,jdbcType=VARCHAR}
+		,TASK_ET = TO_CHAR(TO_DATE(#{taskEt, jdbcType=VARCHAR},'YYYY-MM-DD'), 'YYYYMMDD')
+		
+		,TASK_SCORE =	#{taskScore,jdbcType=NUMERIC}
+		<if test="atchFileId neq null">
+				, ATCH_FILE_ID = #{atchFileId,jdbcType=NUMERIC}
+		</if>	
+	WHERE TASK_NO = #{taskNo,jdbcType=VARCHAR}
+	
+	
+	
+</update>
+
+<delete id="deleteProjectTask">
+	UPDATE PROJECT_TASK
+	SET
+		TASK_STATUS =	'N'
+	WHERE TASK_NO = #{taskNo,jdbcType=VARCHAR}
+</delete>
+
+<select id="selectListTaskSubmissionWithTaskNo" resultType="ProjectTaskSubmissionVO">
+	SELECT 
+			TASKSUB_NO	/*프로젝트제출과제번호*/
+			,TASK_NO	/*프로젝트과제번호*/
+			,TEAM_CD	/*프로젝트팀번호*/
+			,TASKSUB_DATE	/*제출일자*/
+			,TASKSUB_SCORE	/*과제점수*/
+			,ATCH_FILE_ID	/*첨부파일*/
+	FROM
+			PROJECT_TASK_SUBMISSION
+	WHERE
+			TASK_NO =  #{taskNo,jdbcType=VARCHAR}
+	
+</select>
+
+
+</mapper>

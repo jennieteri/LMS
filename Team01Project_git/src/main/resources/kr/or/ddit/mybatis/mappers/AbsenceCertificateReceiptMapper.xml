@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.yguniv.absencecertificatereceipt.dao.AbsenceCertificateReceiptMapper">
+<resultMap type="AbsenceCertificateReceiptVO" id="absenceMap" autoMapping="true">
+	<id property="absenceCd" column="ABSENCE_CD" />
+	<result property="atchFileId" column="ATCH_FILE_ID"/>
+	<association property="atchFile" column="ATCH_FILE_ID"
+			select="kr.or.ddit.yguniv.atch.dao.AtchFileMapper.selectAtchFileEnable" />
+	<association property="attendanceVO" javaType="AttendanceVO" autoMapping="true" />
+	<association property="studentVO" javaType="StudentVO" autoMapping="true" />
+	<association property="attendeeVO" javaType="AttendeeVO" autoMapping="true" />
+	<association property="commonCodeVO" javaType="CommonCodeVO" autoMapping="true" />
+	<association property="orderVO" javaType="OrderLectureDataVO" autoMapping="true" />
+</resultMap>
+
+
+	<!-- 공결인정서 신규 등록 -->
+	<insert id="insertAbsenceCertificateReceipt">
+		<selectKey order="BEFORE" resultType="string" keyProperty="absenceCd">
+			SELECT SEQ_ABSENCE.NEXTVAL FROM DUAL
+		</selectKey>
+		INSERT INTO ABSENCE_CERTIFICATE_RECEIPT
+		(
+			ABSENCE_CD
+			, STU_ID
+			, LECT_ORDER
+			, LECT_NO
+			, ABSENCE_RESN
+			, ATCH_FILE_ID
+			, WEEK_CD
+			, COCO_CD
+		) VALUES (
+			#{absenceCd, jdbcType=VARCHAR}
+			, #{stuId, jdbcType=VARCHAR}
+			, #{lectOrder, jdbcType=NUMERIC}
+			, #{lectNo, jdbcType=VARCHAR}
+			, #{absenceResn, jdbcType=VARCHAR}
+			, #{atchFileId, jdbcType=NUMERIC}
+			, #{weekCd, jdbcType=VARCHAR}
+			, 'CO01'
+		)
+	</insert>
+	
+	<!-- 하나의 공결인정서 수정 -->
+	<update id="updateAbsence">
+		UPDATE ABSENCE_CERTIFICATE_RECEIPT
+		SET ABSENCE_RESN = #{absenceResn, jdbcType=VARCHAR}
+			, COCO_CD = 'CO01'
+			, ABSENCE_RETURN = #{absenceReturn, jdbcType=VARCHAR}
+		<if test="atchFileId neq null">
+			, ATCH_FILE_ID = #{atchFileId,jdbcType=NUMERIC}
+		</if>
+		WHERE ABSENCE_CD = #{absenceCd, jdbcType=VARCHAR} 
+	</update>
+	
+	
+	<!-- 하나의 공결인정서 상태 수정   -->
+	<update id="updateAbsenceCertificateReceipt">
+		UPDATE ABSENCE_CERTIFICATE_RECEIPT
+		SET COCO_CD = #{cocoCd, jdbcType=VARCHAR}
+			, ABSENCE_RETURN = #{absenceReturn, jdbcType=VARCHAR}
+		WHERE ABSENCE_CD = #{absenceCd, jdbcType=VARCHAR} 
+	</update>	
+	
+	<!-- 동시 수정 absence, attendance -->
+    <!-- 공결인정서 상태 수정 -->
+	<update id="updateAbsenceAndAttendance">
+	    UPDATE ABSENCE_CERTIFICATE_RECEIPT A
+	    SET A.COCO_CD = #{cocoCd, jdbcType=VARCHAR}
+	    , A.ABSENCE_DT = TO_CHAR(TRUNC(SYSDATE), 'YYYYMMDD')
+	    , A.ABSENCE_RETURN = #{absenceReturn, jdbcType=VARCHAR}
+	    WHERE ABSENCE_CD = #{absenceCd, jdbcType=VARCHAR} 
+	</update>
+	<!-- 출결 상태 수정 / 여기서 하지말고 attendanceMapper에서 처리하기 -->
+<!-- 	    UPDATE ATTENDANCE -->
+<!-- 	    SET ATND_CD = #{attendanceVO.atndCd, jdbcType=VARCHAR} -->
+<!-- 	    WHERE STU_ID = #{attendanceVO.stuId, jdbcType=VARCHAR} -->
+<!-- 		  AND LECT_NO = #{attendanceVO.lectNo, jdbcType=VARCHAR} -->
+<!-- 		  AND WEEK_CD = #{attendanceVO.weekCd, jdbcType=VARCHAR} -->
+<!-- 		  AND LECT_ORDER = #{attendanceVO.lectOrder, jdbcType=NUMERIC} -->
+
+	<!-- 하나의 공결인정서 '삭제'로 상태 수정   -->
+	<update id="deleteAbsenceCertificateReceipt">
+		UPDATE ABSENCE_CERTIFICATE_RECEIPT
+		SET COCO_CD = 'CO04'
+		WHERE ABSENCE_CD = #{absenceCd, jdbcType=VARCHAR} 
+	</update>
+	
+	<!-- 어떤 강의인지 정의된게 없다 -->
+	<!-- <select id="selectTotalRecord" resultMap="absenceMap" resultType="int"> -->
+	
+	<!-- 하나의 공결인정서 상세 조회 -->
+	<select id="selectAbsenceCertificateReceipt" resultMap="absenceMap">
+		SELECT A.ABSENCE_CD
+		, A.LECT_NO
+		, A.LECT_ORDER
+        , E.SECT_DT
+        ,(SELECT COCO_STTS FROM COMMON_CODE WHERE COCO_CD = E.SECT_ETIME ) AS TEIN
+        , A.STU_ID
+        , C.NM
+        ,(SELECT COCO_STTS FROM COMMON_CODE WHERE COCO_CD = D.ATND_CD) AS ATST
+        , A.ABSENCE_RESN
+        , A.ATCH_FILE_ID
+        ,(SELECT COCO_STTS FROM COMMON_CODE WHERE COCO_CD = A.COCO_CD) AS PRST
+        , A.COCO_CD
+        , D.ATND_CD
+        , A.WEEK_CD
+        , F.ATCH_FILE_ID
+        , F.FILE_SN
+        , F.ORIGNL_FILE_NM
+        , F.FILE_FANCYSIZE
+        , A.ABSENCE_DT
+        , A.ABSENCE_RETURN
+        FROM 
+		    ABSENCE_CERTIFICATE_RECEIPT A
+            INNER JOIN PERSON C ON A.STU_ID = C.ID
+            INNER JOIN ATTENDANCE D ON A.STU_ID = D.STU_ID
+                AND A.WEEK_CD = D.WEEK_CD
+                AND A.LECT_ORDER = D.LECT_ORDER
+                AND A.LECT_NO = D.LECT_NO
+            INNER JOIN ORDER_LECTURE_DATA E ON A.LECT_ORDER = E.LECT_ORDER
+                AND A.WEEK_CD = E.WEEK_CD
+                AND A.LECT_NO = E.LECT_NO
+            LEFT OUTER JOIN ATCH_FILE_DETAIL F ON F.ATCH_FILE_ID = A.ATCH_FILE_ID
+        WHERE ABSENCE_CD =  #{absenceCd, jdbcType=VARCHAR} 
+	</select>
+	
+	<!-- 페이지 네이션 할때 쓰이는 페이지 갯수 정하는 SQL문 -->
+	<select id="selectTotalRecord" resultType="int">
+		SELECT COUNT(A.ABSENCE_CD)
+		FROM ABSENCE_CERTIFICATE_RECEIPT A
+		INNER JOIN PERSON B ON (A.STU_ID = B.ID)
+		WHERE LECT_NO = #{absenceVO.lectNo, jdbcType=VARCHAR}
+		<if test="absenceVO.cocoCd != null and absenceVO.cocoCd != ''">
+      		AND A_COCO_CD = #{absenceVO.cocoCd, jdbcType=VARCHAR}
+    	</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(absenceVO.stuId)">
+			AND A.COCO_CD != 'CO04'
+			AND A.STU_ID = #{absenceVO.stuId, jdbcType=VARCHAR}
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(paging.simpleCondition.searchWord)">
+			<choose>
+				<when
+					test="paging.simpleCondition.searchType eq 'id'">
+					AND INSTR(A.STU_ID, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+				</when>
+				<when
+					test="paging.simpleCondition.searchType eq 'name'">
+					AND INSTR(B.NM, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+				</when>
+				<when
+					test="paging.simpleCondition.searchType eq 'content'">
+					AND INSTR(A.ABSENCE_RESN, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+				</when>
+				<when
+					test="paging.simpleCondition.searchType eq 'sttsType'">
+					AND INSTR((SELECT COCO_STTS FROM COMMON_CODE WHERE COCO_CD = A.COCO_CD)	, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+				</when>
+				<otherwise>
+					AND INSTR(A.STU_ID, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+					OR INSTR(B.NM, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+					OR INSTR(A.ABSENCE_RESN, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+				</otherwise>
+			</choose>
+		</if>
+	</select>
+	
+	<!-- 공결상태 리스트 조회 -->
+	<select id="selectAbsenceCertificateReceiptList" resultMap="absenceMap">
+		SELECT H.*
+		FROM
+		(
+		SELECT G.*
+		FROM
+		(
+			SELECT F.*, ROWNUM AS RNUM 		/* 최신 문의부터 1페이지로 자르기 위한 번호 */
+			FROM
+			(
+				SELECT 
+				    A.ABSENCE_CD
+				    , A.LECT_NO
+				    , A.LECT_ORDER
+				    , E.SECT_DT
+				    , (SELECT COCO_STTS FROM COMMON_CODE WHERE COCO_CD = E.SECT_ETIME ) AS TEIN -- 교시 코드
+				    , A.STU_ID
+				    , C.NM
+				    , (SELECT COCO_STTS FROM COMMON_CODE WHERE COCO_CD = D.ATND_CD) AS ATST -- 출결상태 코드
+				    , A.ABSENCE_RESN
+				    , A.ATCH_FILE_ID
+				    , PRST.COCO_STTS AS PRST -- (공결 처리상태 코드)서브쿼리 결과를 별칭으로 가져오기
+				    , A.COCO_CD AS A_COCO_CD
+				    , D.ATND_CD
+				    , A.WEEK_CD
+				    , A.ABSENCE_DT
+				    , A.ABSENCE_RETURN
+				FROM 
+				    ABSENCE_CERTIFICATE_RECEIPT A
+				    INNER JOIN PERSON C ON A.STU_ID = C.ID
+				    INNER JOIN ATTENDANCE D ON A.STU_ID = D.STU_ID
+				        AND A.WEEK_CD = D.WEEK_CD
+				        AND A.LECT_ORDER = D.LECT_ORDER
+				        AND A.LECT_NO = D.LECT_NO
+				    INNER JOIN ORDER_LECTURE_DATA E ON A.LECT_ORDER = E.LECT_ORDER
+				        AND A.WEEK_CD = E.WEEK_CD
+				        AND A.LECT_NO = E.LECT_NO
+				    LEFT JOIN COMMON_CODE PRST ON PRST.COCO_CD = A.COCO_CD
+		        WHERE A.LECT_NO = #{absenceVO.lectNo, jdbcType=VARCHAR}
+		        <if test="absenceVO.cocoCd != null and absenceVO.cocoCd != ''">
+      				AND A_COCO_CD = #{absenceVO.cocoCd, jdbcType=VARCHAR}
+    			</if>
+		        <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(absenceVO.stuId)">
+		        	AND PRST.COCO_STTS != '삭제'
+		        	AND A.STU_ID = #{absenceVO.stuId, jdbcType=VARCHAR}
+		        </if>
+		        <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(paging.simpleCondition.searchWord)">
+					<choose>
+						<when test="paging.simpleCondition.searchType eq 'id'">
+							AND INSTR(A.STU_ID, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+						</when>
+						<when test="paging.simpleCondition.searchType eq 'name'">
+							AND INSTR(C.NM, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+						</when>
+						<when test="paging.simpleCondition.searchType eq 'content'">
+							AND INSTR(A.ABSENCE_RESN, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+						</when>
+						<when
+							test="paging.simpleCondition.searchType eq 'sttsType'">
+							AND INSTR((SELECT COCO_STTS FROM COMMON_CODE WHERE COCO_CD = A.COCO_CD)	, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+						</when>
+						<otherwise>
+							AND INSTR(A.STU_ID, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+							OR INSTR(C.NM, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+							OR INSTR(A.ABSENCE_RESN, #{paging.simpleCondition.searchWord, jdbcType=VARCHAR}) > 0
+						</otherwise>
+					</choose>
+				</if>
+				ORDER BY TO_NUMBER(A.ABSENCE_CD) DESC
+		    ) F
+		) G
+		<![CDATA[
+		WHERE RNUM >= #{paging.startRow, jdbcType=NUMERIC} 
+		AND RNUM <= #{paging.endRow, jdbcType=NUMERIC}
+		]]>
+		ORDER BY RNUM
+		) H
+		ORDER BY TO_NUMBER(H.ABSENCE_CD) DESC
+	</select>
+
+	
+	<!-- 전체 페이지수 조회 -->
+	<select id="AbsencePageCount" resultMap="absenceMap">
+		SELECT COUNT(*)
+		FROM ABSENCE_CERTIFICATE_RECEIPT
+		<if test="cocoCd != null and cocoCd != ''">
+      		WHERE COCO_CD = #{cocoCd}
+    	</if>
+	</select>
+	
+	<select id="AbsenceListDistinct" resultMap="absenceMap">
+		SELECT
+		    ABSENCE_CD
+		    , STU_ID
+		    , LECT_NO
+		    , LECT_ORDER
+		    , COCO_CD
+		    , ATCH_FILE_ID
+		    , ABSENCE_RETURN
+		FROM ABSENCE_CERTIFICATE_RECEIPT
+	</select>
+	
+	<select id="AbsenceListcount" resultMap="absenceMap">
+		SELECT COUNT(*)
+		FROM ABSENCE_CERTIFICATE_RECEIPT
+		<if test="cocoCd != null and cocoCd != ''">
+      		WHERE COCO_CD = #{cocoCd}
+    	</if>
+	</select>
+	
+	
+	
+</mapper>

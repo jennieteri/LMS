@@ -1,0 +1,347 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.yguniv.coursecart.dao.LectureCartMapper">
+  <!-- Result Map 정의 -->
+    <resultMap type="LectureVO" id="lectureListMap" autoMapping="true">
+    	<id property="lectNo" column="LECT_NO"/>
+        <association property="commonCodeVO" autoMapping="true" javaType="CommonCodeVO">
+            <id property="cocoCd" column="COCO_CD"/>
+        </association>
+        <association property="subjectVO" autoMapping="true" javaType="SubjectVO">
+            <id property="subNo" column="SUB_NO"/>
+            <association property="departmentVO" autoMapping="true" javaType="DepartmentVO"></association>
+        </association>
+        <association property="professorVO" autoMapping="true" javaType="ProfessorVO">
+            <id property="id" column="ID"/>
+        </association>
+        <collection property="scheduleVO" ofType="ScheduleVO" select="kr.or.ddit.yguniv.lecture.dao.LectureMapper.getSchedule" column="LECT_NO"/>
+    </resultMap>
+
+    <!-- Lecture List 쿼리 -->
+    <select id="getLectureList" resultMap="lectureListMap">
+select
+    l.lect_no,
+    l.lect_nm,
+    (select coco_stts from common_code where coco_cd = s.sub_ficd_cd) as sub_ficd_cd,
+    c.coco_stts,
+    p.nm,  -- 직접 JOIN한 person 테이블에서 nm을 가져옴
+    l.lect_en_nope,
+    (select count(*) from lecture_cart where lect_no = l.lect_no) as lect_atten_nope,  -- 수정된 부분
+    l.lect_score
+      ,  LISTAGG(
+		    (SELECT coco_stts FROM common_code WHERE coco_cd = sc.date_cd) || ' ' || 
+		    (SELECT coco_stts FROM common_code WHERE coco_cd = ettc.edc_time_cd),
+    		' / '
+			) WITHIN GROUP (ORDER BY sc.date_cd, ettc.edc_time_cd) AS joinSchedule,
+        cr.croom_pstn
+     ,(select coco_stts from common_code where coco_cd = s.grade_cd) as grade_cd
+     , s.sub_nm
+     , d.dept_nm
+     , l.lect_online_yn
+     
+from lecture l 
+    inner join common_code c on l.lect_status_cd = c.coco_cd    
+    inner join subject s on l.sub_no = s.sub_no
+    inner join professor pro on l.profe_id = pro.profe_id
+    inner join person p on pro.profe_id = p.id
+    inner join department d on d.dept_no =pro.dept_no
+    left outer join schedule sc on l.lect_no = sc.lect_no
+    left outer join education_time_table_code ettc on ettc.edc_time_cd = sc.edc_time_cd
+    left outer join class_room cr on sc.croom_cd = cr.croom_cd
+where l.lect_status_cd = 'L02'
+group by l.lect_no, l.lect_nm, sub_ficd_cd, c.coco_stts, p.nm, l.lect_en_nope, l.lect_score, cr.croom_pstn,s.grade_cd,s.sub_nm, d.dept_nm, l.lect_online_yn
+        
+
+    </select>
+
+	<select id="getStudentLectureList" resultMap="lectureListMap">
+select
+    l.lect_no,
+    l.lect_nm,
+    (select coco_stts from common_code where coco_cd = s.sub_ficd_cd) as sub_ficd_cd,
+    c.coco_stts,
+    p.nm,  -- 직접 JOIN한 person 테이블에서 nm을 가져옴
+    l.lect_en_nope,
+    (select count(*) from lecture_cart where lect_no = l.lect_no) as lect_atten_nope,  -- 수정된 부분
+    l.lect_score
+     ,  LISTAGG(
+		    (SELECT coco_stts FROM common_code WHERE coco_cd = sc.date_cd) || ' ' || 
+		    (SELECT coco_stts FROM common_code WHERE coco_cd = ettc.edc_time_cd),
+    		' / '
+			) WITHIN GROUP (ORDER BY sc.date_cd, ettc.edc_time_cd) AS joinSchedule, cr.croom_pstn
+			     , l.lect_online_yn
+from
+    lecture_cart lc 
+	    inner join lecture l on lc.lect_no = l.lect_no 
+	    inner join common_code c on l.lect_status_cd = c.coco_cd    
+	    inner join subject s on l.sub_no = s.sub_no
+	    inner join professor pro on l.profe_id = pro.profe_id
+	    inner join person p on pro.profe_id = p.id
+	    left outer join schedule sc on l.lect_no = sc.lect_no
+	    left outer join education_time_table_code ettc on ettc.edc_time_cd = sc.edc_time_cd
+	    left outer join class_room cr on sc.croom_cd = cr.croom_cd
+where 
+	lc.stu_id=#{stuId} and l.lect_status_cd = 'L02'  and lc.cart_sttus_cd='WAIT'
+group by 
+	l.lect_no, l.lect_nm, sub_ficd_cd, c.coco_stts, p.nm, l.lect_en_nope, l.lect_score, cr.croom_pstn, l.lect_online_yn
+	
+	</select>
+	
+	<select id="attendeeStudentLectureList" resultMap="lectureListMap">
+	
+select
+    l.lect_no,
+    l.lect_nm,
+    (select coco_stts from common_code where coco_cd = s.sub_ficd_cd) as sub_ficd_cd,
+    c.coco_stts,
+    p.nm,  -- 직접 JOIN한 person 테이블에서 nm을 가져옴
+    l.lect_en_nope,
+    (select count(*) from lecture_cart where lect_no = l.lect_no) as lect_atten_nope,  -- 수정된 부분
+    l.lect_score
+    ,  LISTAGG(
+		    (SELECT coco_stts FROM common_code WHERE coco_cd = sc.date_cd) || ' ' || 
+		    (SELECT coco_stts FROM common_code WHERE coco_cd = ettc.edc_time_cd),
+    		' / '
+			) WITHIN GROUP (ORDER BY sc.date_cd, ettc.edc_time_cd) AS joinSchedule, cr.croom_pstn
+			     , l.lect_online_yn
+from
+    lecture_cart lc 
+	    inner join lecture l on lc.lect_no = l.lect_no 
+	    inner join common_code c on l.lect_status_cd = c.coco_cd    
+	    inner join subject s on l.sub_no = s.sub_no
+	    inner join professor pro on l.profe_id = pro.profe_id
+	    inner join person p on pro.profe_id = p.id
+	    left outer join schedule sc on l.lect_no = sc.lect_no
+	    left outer join education_time_table_code ettc on ettc.edc_time_cd = sc.edc_time_cd
+	    left outer join class_room cr on sc.croom_cd = cr.croom_cd
+where 
+	lc.stu_id=#{stuId} and l.lect_status_cd = 'L02' and lc.cart_sttus_cd='SUCC'
+group by 
+	l.lect_no, l.lect_nm, sub_ficd_cd, c.coco_stts, p.nm, l.lect_en_nope, l.lect_score, cr.croom_pstn, l.lect_online_yn
+	</select>
+	
+	
+	
+<resultMap type="LectureVO" id="lecturePaperMap2">
+	<collection property="weekVO" ofType="WeekLecturePlanVO" autoMapping="true"></collection>
+	<collection property="lesVo" ofType="LectureEvaluationStandardVO" autoMapping="true"></collection>
+</resultMap>
+
+<resultMap id="lecturePaperMap" type="LectureVO" autoMapping="true">
+    <!-- LectureVO 기본 속성 -->
+    <id property="lectNo" column="lect_no" />
+    <result property="profeId" column="profe_id" />
+    <result property="subNo" column="sub_no" />
+    <result property="lectStatusCd" column="lect_status_cd" />
+    <result property="semstrNo" column="semstr_no" />
+    <result property="lectScore" column="lect_score" />
+    <result property="lectNm" column="lect_nm" />
+    <result property="lectSession" column="lect_session" />
+    <result property="lectEnNope" column="lect_en_nope" />
+    <result property="lectOnlineYn" column="lect_online_yn" />
+    <result property="lectDescr" column="lect_descr" />
+	
+	<association property="professorVO" javaType="ProfessorVO" autoMapping="true"></association>
+	<association property="subjectVO" javaType="SubjectVO" autoMapping="true">
+		<association property="departmentVO" javaType="DepartmentVO" autoMapping="true"></association>
+	</association>
+	
+    <!-- WeekLecturePlanVO 매핑 -->
+    <collection property="weekVO" ofType="WeekLecturePlanVO" autoMapping="true">
+        <result property="weekCd" column="week_cd" />
+        <result property="lectPlan" column="lect_plan" />
+    </collection>
+
+    <!-- LectureEvaluationStandardVO 매핑 -->
+    <collection property="lesVo" ofType="LectureEvaluationStandardVO" autoMapping="true">
+        <result property="evlStdrCd" column="evl_stdr_cd" />
+        <result property="rate" column="rate" />
+    </collection>
+
+        <collection property="scheduleVO" autoMapping="true" ofType="ScheduleVO">
+            <association property="classRoomVO" autoMapping="true" javaType="ClassRoomVO"></association>
+        </collection>
+
+</resultMap>
+
+<!--  학기코드 에서 트리거로 체인지 이벤트 하나로 해당 학기
+
+아이디로 수강생에서 강의 리스트 뺴오고 리스트에서 학기코드(중복제거) 24년도 입핟 1,2학기 25년도 1,2,학기   -->
+
+    <!-- 다른 쿼리 -->
+<select id="selectLecturePaper" resultMap="lecturePaperMap">
+
+
+  
+SELECT
+        l.lect_no
+        , l.profe_id
+        , l.sub_no
+        , (SELECT coco_stts FROM common_code WHERE coco_cd = l.lect_status_cd) AS lect_status_cd
+        , l.semstr_no
+        , l.lect_score
+        , l.lect_nm
+        , l.lect_session
+        , l.lect_en_nope
+        , l.lect_online_yn
+        , l.lect_descr
+        , (SELECT coco_stts FROM common_code WHERE coco_cd = w.week_cd) AS week_cd
+        , w.lect_plan
+        , (SELECT coco_stts FROM common_code WHERE coco_cd = les.evl_stdr_cd) AS evl_stdr_cd
+        , les.rate
+        , p.nm
+        , p.mbtlnum
+        , p.eml
+        , s.sub_nm
+        , (SELECT coco_stts FROM common_code WHERE coco_cd = s.grade_cd) AS grade_cd
+        , d.dept_nm
+        , (SELECT coco_stts FROM common_code WHERE coco_cd = s.SUB_FICD_CD) AS SUB_FICD_CD
+     	,  LISTAGG(
+		    (SELECT coco_stts FROM common_code WHERE coco_cd = sc.date_cd) || ' ' || 
+		    (SELECT coco_stts FROM common_code WHERE coco_cd = ettc.edc_time_cd),
+    		' / '
+			) WITHIN GROUP (ORDER BY sc.date_cd, ettc.edc_time_cd) AS joinSchedule
+        , cr.croom_pstn
+    FROM 
+        lecture l
+			    INNER JOIN lecture_evaluation_standard les ON les.lect_no = l.lect_no
+			    INNER JOIN week_lecture_plan w ON l.lect_no = w.lect_no
+			    INNER JOIN person p on l.profe_id=p.id
+			    inner join subject s on s.sub_no = l.sub_no
+			    inner join professor pr on pr.profe_id = l.profe_id
+			    inner join department d on d.dept_no =pr.dept_no
+                INNER JOIN COMMON_CODE C ON(les.EVL_STDR_CD = C.COCO_CD)
+			    left outer join schedule sc on l.lect_no = sc.lect_no
+				left outer join education_time_table_code ettc on ettc.edc_time_cd = sc.edc_time_cd
+				left outer join class_room cr on sc.croom_cd = cr.croom_cd
+    WHERE 
+         l.lect_no='L018'
+GROUP BY
+    l.lect_no
+    , l.profe_id
+    , l.sub_no
+    , l.lect_status_cd
+    , l.semstr_no
+    , l.lect_score
+    , l.lect_nm
+    , l.lect_session
+    , l.lect_en_nope
+    , l.lect_online_yn
+    , l.lect_descr
+    , w.week_cd
+    , w.lect_plan
+    , les.evl_stdr_cd
+    , les.rate
+    , p.nm
+    , s.sub_nm
+    , s.grade_cd
+    , d.dept_nm
+    , s.SUB_FICD_CD
+ 	, p.mbtlnum
+    , p.eml
+    , cr.croom_pstn
+    ,C.OUTPT_ORDR
+    
+
+
+
+
+</select>
+
+
+    <!-- Insert 쿼리 -->
+    <insert id="insertCart" parameterType="LectureCartVO">
+        INSERT INTO lecture_cart (
+            stu_id,
+            lect_no,
+            cart_sttus_cd
+        ) VALUES (
+            #{stuId},
+            #{lectNo},
+            'WAIT'
+        )
+    </insert>
+    <insert id="directInsertOneCart" parameterType="LectureCartVO">
+        INSERT INTO lecture_cart (
+            stu_id,
+            lect_no,
+            cart_sttus_cd
+        ) VALUES (
+            #{stuId},
+            #{lectNo},
+            'SUCC'
+        )
+    </insert>
+
+    <!-- Update 쿼리 -->
+    <update id="updateCart">
+		UPDATE lecture_cart
+		SET
+		   cart_sttus_cd = 'SUCC'
+		WHERE
+		        stu_id = #{stuId}
+		    AND lect_no = #{lectNo}
+    </update>
+    
+    <select id="getLectureAttendeeCount" resultType="Integer">
+    /* 하나의 강의의 인원 모집수를 가져옴  */
+    select 
+    lect_en_nope
+	from lecture
+	where lect_no =#{lectNo}
+    
+    </select>
+    <select id="getLectureCartAttendeeCount" resultType="Integer">
+    /* 현재 수강신청의 신청 수를 가져옴. */
+    select 
+    count(lect_no)
+	from lecture_cart
+	where lect_no =#{lectNo}and cart_sttus_cd = 'SUCC'
+    </select>
+    
+    
+
+    <!-- Delete 쿼리 -->
+    <delete id="deleteCart">
+        DELETE FROM lecture_cart
+        WHERE
+        stu_id = #{stuId}  
+        AND lect_no = #{lectNo}
+    </delete>
+	
+	<select id="selectCart" resultType="Integer">
+		select *
+		from lecture_cart
+		where 
+				stu_id = #{stuId}  
+		        AND lect_no = #{lectNo}
+		
+		
+		
+	</select>
+	
+	<select id="getPreLectureCartDate" resultType="NoticeBoardVO">
+		select
+        ntc_dt
+        , ntc_et
+    from 
+        noticeboard
+    where
+        coco_cd = 'NB04'
+        and semstr_no = '202501'
+	</select>
+	<select id="getPostLectureCartDate" resultType="NoticeBoardVO">
+		    select
+       ntc_dt
+        , ntc_et
+    from 
+        noticeboard
+    where
+        coco_cd = 'NB05'
+        and semstr_no = '202501'
+    
+	</select>
+	
+
+
+</mapper>

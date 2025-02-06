@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="kr.or.ddit.yguniv.security.conf.resource.dao.SecuredResourceMapper">
+
+
+	 <resultMap type="kr.or.ddit.yguniv.security.conf.resource.vo.SecuredResourceVO" id="resMap" autoMapping="true">
+		 <id property="resId" column="RES_ID"/>
+		 <collection property="authorities" ofType="string">
+		 	<result column="AUTHORITIES"/>
+		 </collection>
+	 </resultMap>
+ <select id="selectResourceList" resultMap="resMap">
+ SELECT
+    R.RES_ID
+    , RES_URL
+    , RES_METHOD
+    , RES_SORT
+    , RES_PARENT
+    , AUTHORITY AUTHORITIES
+ FROM RESOURCES R  LEFT OUTER JOIN SECURED_RESOURCE SR ON
+    R.RES_ID = SR.RES_ID
+ ORDER BY RES_SORT
+ </select>
+ 
+<resultMap id="userWithRolesMap" type="PersonVO" autoMapping="true">
+	    <id property="id" column="id"/>
+	    <result property="pswd" column="pswd"/>
+	    <collection property="personType" ofType="string">
+	        <result column="role_id"/>
+	    </collection>
+</resultMap>
+
+<select id="findByUsername" parameterType="string" resultMap="userWithRolesMap">
+    SELECT
+    	P.ID
+		, P.PSWD
+		, P.NM
+		, P.MBTLNUM
+		, P.EML
+		, P.CRTFC_MN_CD
+		, P.PROFL_PHOTO
+		, C.ROLE_DESC AS PERSON_TYPE
+        , S.STRE_CATE_CD
+        , c.role_id
+    FROM PERSON P
+        LEFT OUTER JOIN STUDENT S ON(P.ID = S.STU_ID)
+        INNER JOIN PERSON_ROLE B ON p.ID = B.ID
+        INNER JOIN ROLE C ON B.ROLE_ID = C.ROLE_ID
+    WHERE P.ID = #{username,jdbcType=VARCHAR} AND P.PERSON_YN = 'N'
+</select>
+
+
+</mapper>

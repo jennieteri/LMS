@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.yguniv.introduce.dao.IntroduceMapper">
+
+<!-- 전체 게시글 수 조회 -->
+<select id="selectTotalRecord" resultType="int">
+    SELECT COUNT(I.STU_ID)
+    FROM INTRODUCE I
+    LEFT JOIN PERSON P ON I.STU_ID = P.ID
+    <where>
+        <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+            <choose>
+                <when test="simpleCondition.searchType eq 'number'">
+                    INSTR(I.STU_ID, #{simpleCondition.searchWord}) > 0
+                </when>
+                <when test="simpleCondition.searchType eq 'name'">
+                    INSTR(P.NM, #{simpleCondition.searchWord}) > 0
+                </when>
+                <otherwise>
+                    (INSTR(I.INT_QUE1, #{simpleCondition.searchWord}) > 0
+                    OR INSTR(I.INT_QUE2, #{simpleCondition.searchWord}) > 0
+                    OR INSTR(I.INT_QUE3, #{simpleCondition.searchWord}) > 0
+                    OR INSTR(I.STU_ID, #{simpleCondition.searchWord}) > 0
+                    OR INSTR(P.NM, #{simpleCondition.searchWord}) > 0)
+                </otherwise>
+            </choose>
+        </if>
+    </where>
+</select>
+
+
+<resultMap id="IntroduceMap" type="IntroduceVO" autoMapping="true">
+    <id property="intCd" column="INT_CD" />
+    <result property="atchFileId" column="ATCH_FILE_ID" />
+	<association property="atchFile" column="ATCH_FILE_ID"
+		select ="kr.or.ddit.yguniv.atch.dao.AtchFileMapper.selectAtchFileEnable"/>
+    <association property="employmentfield" javaType="EmploymentFieldVO" autoMapping="true"/>
+    <association property="person" javaType="PersonVO" autoMapping="true"/>
+    <association property="commoncode" javaType="CommonCodeVO" autoMapping="true"/>
+<collection property="certificate" ofType="CertificateVO">
+    <id property="cerNo" column="CER_NO" />
+    <result property="certNm" column="CERT_NM" />
+    <result property="certDate" column="CERT_DATE" />
+    <result property="intCd" column="INT_CD" />
+    <result property="atchFileId" column="ATCH_FILE_ID" />
+    <association property="atchFile" javaType="AtchFileVO">
+        <id property="atchFileId" column="ATCH_FILE_ID" />
+        <collection property="fileDetails" ofType="AtchFileDetailVO">
+            <result property="fileSn" column="FILE_SN" />
+            <result property="fileStreCours" column="FILE_STRE_COURS" />
+            <result property="orignlFileNm" column="ORIGNL_FILE_NM" />
+        </collection>
+    </association>
+</collection>
+
+</resultMap>
+
+
+	<insert id="insertIntroduce" parameterType="IntroduceVO">
+
+    <selectKey order="BEFORE" resultType="int" keyProperty="intCd">
+        SELECT INTRODUCE_SEQ.NEXTVAL FROM DUAL
+    </selectKey>
+
+    INSERT INTO INTRODUCE (
+            stu_id,
+		    empfi_cd,
+		    int_que1,
+		    int_que2,
+		    int_que3,
+		    int_date,
+		    int_udate,
+		    int_feed,
+		    int_cd
+    ) VALUES (
+		 #{stuId, jdbcType=VARCHAR}
+		, #{empfiCd, jdbcType=VARCHAR}
+		, #{intQue1, jdbcType=VARCHAR}
+		, #{intQue2, jdbcType=VARCHAR}
+		, #{intQue3, jdbcType=VARCHAR}
+		, SYSDATE
+		, NULL
+        , NULL
+		, #{intCd, jdbcType=NUMERIC}
+    )
+	</insert>
+
+
+	<insert id="insertCertificate" parameterType="CertificateVO">
+	    INSERT INTO CERTIFICATE (
+	        atch_file_id,
+	        cert_nm,
+	        cert_date,
+	        int_cd,
+	        cer_no
+	    )
+	    VALUES (
+	        #{atchFileId, jdbcType=NUMERIC},
+	        #{certNm, jdbcType=VARCHAR},
+	        #{certDate, jdbcType=VARCHAR},
+	        #{intCd, jdbcType=NUMERIC},
+	        (SELECT NVL(MAX(cer_no), 0) + 1 FROM CERTIFICATE WHERE int_cd = #{intCd})
+	    )
+	</insert>
+
+	
+	<select id="selectintroduceListPaging" resultMap="IntroduceMap">
+    
+    SELECT *
+    FROM (
+        SELECT A.*, ROWNUM AS RNUM
+        FROM (
+            SELECT 
+                I.STU_ID,
+                I.EMPFI_CD,
+                I.INT_QUE1,
+                I.INT_QUE2,
+                I.INT_QUE3,
+                I.INT_DATE,
+                I.INT_UDATE,
+                I.INT_FEED,
+                I.INT_CD,
+                E.EMPFI_NM,
+                C.CERT_NM,
+                C.CERT_DATE,
+                P.NM,
+                S.GRADE_CD,
+                CC.COCO_STTS
+            FROM 
+                INTRODUCE I
+            INNER JOIN EMPLOYMENT_FIELD E ON I.EMPFI_CD = E.EMPFI_CD
+            INNER JOIN CERTIFICATE C ON I.INT_CD = C.INT_CD
+            INNER JOIN PERSON P ON I.STU_ID = P.ID
+            INNER JOIN STUDENT S ON I.STU_ID = S.STU_ID
+            INNER JOIN COMMON_CODE CC ON S.GRADE_CD = CC.COCO_CD
+            WHERE 1=1
+                   <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+                    AND
+                    <choose>
+                        <when test="simpleCondition.searchType eq 'number'">
+                            INSTR(I.STU_ID, #{simpleCondition.searchWord}) > 0
+                        </when>
+                        <when test="simpleCondition.searchType eq 'name'">
+                            INSTR(P.NM, #{simpleCondition.searchWord}) > 0
+                        </when>
+                        <otherwise>
+                            (INSTR(I.INT_QUE1, #{simpleCondition.searchWord}) > 0
+                            OR INSTR(I.INT_QUE2, #{simpleCondition.searchWord}) > 0
+                            OR INSTR(I.INT_QUE3, #{simpleCondition.searchWord}) > 0
+                            OR INSTR(I.STU_ID, #{simpleCondition.searchWord}) > 0
+                            OR INSTR(P.NM, #{simpleCondition.searchWord}) > 0)
+                        </otherwise>
+                    </choose>
+                </if>
+            <![CDATA[
+            ORDER BY I.INT_DATE DESC
+            ) A
+            WHERE ROWNUM <= #{endRow}
+        ) B
+        WHERE RNUM >= #{startRow}
+    ]]>
+	</select>
+
+	
+<select id="selectIntroduceByUserId" resultMap="IntroduceMap">
+ SELECT *
+	    FROM (
+	        SELECT A.*, ROWNUM AS RNUM
+	        FROM (
+	    SELECT 
+	        I.INT_CD,
+	        I.STU_ID,
+	        I.EMPFI_CD,
+	        I.INT_QUE1,
+	        I.INT_QUE2,
+	        I.INT_QUE3,
+	        I.INT_DATE,
+	        I.INT_UDATE,
+	        I.INT_FEED,
+	        C.CERT_NM,
+	        C.CERT_DATE,
+	        C.ATCH_FILE_ID,
+	        P.NM AS PERSON_NAME,
+	        COMMON.COCO_STTS,
+	        E.EMPFI_NM
+	    FROM INTRODUCE I
+	    LEFT JOIN CERTIFICATE C ON I.INT_CD = C.INT_CD
+	    INNER JOIN PERSON P ON I.STU_ID = P.ID
+	    INNER JOIN STUDENT S ON S.STU_ID = P.ID
+	    INNER JOIN COMMON_CODE COMMON ON COMMON.COCO_CD = S.GRADE_CD
+	    INNER JOIN EMPLOYMENT_FIELD E ON I.EMPFI_CD = E.EMPFI_CD
+	    WHERE I.STU_ID = #{stuId, jdbcType=VARCHAR}
+	    	 <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(paging.simpleCondition.searchWord)">
+                    AND
+                    <choose>
+                        <when test="paging.simpleCondition.searchType eq 'number'">
+                            INSTR(I.STU_ID, #{paging.simpleCondition.searchWord}) > 0
+                        </when>
+                        <when test="paging.simpleCondition.searchType eq 'name'">
+                            INSTR(P.NM, #{paging.simpleCondition.searchWord}) > 0
+                        </when>
+                        <otherwise>
+                            (INSTR(I.INT_QUE1, #{paging.simpleCondition.searchWord}) > 0
+                            OR INSTR(I.INT_QUE2, #{paging.simpleCondition.searchWord}) > 0
+                            OR INSTR(I.INT_QUE3, #{paging.simpleCondition.searchWord}) > 0
+                            OR INSTR(I.STU_ID, #{paging.simpleCondition.searchWord}) > 0
+                            OR INSTR(P.NM, #{paging.simpleCondition.searchWord}) > 0)
+                        </otherwise>
+                    </choose>
+                </if>
+	           <![CDATA[
+            ORDER BY I.INT_DATE DESC
+            ) A
+            WHERE ROWNUM <= #{paging.endRow}
+        ) B
+        WHERE RNUM >= #{paging.startRow}
+    ]]>
+</select>
+
+	<select id="selectintroduce" resultMap="IntroduceMap">
+		SELECT 
+		    I.INT_CD,
+		    I.STU_ID,
+		    P.NM,
+		    I.EMPFI_CD,
+		    E.EMPFI_NM,
+		    I.INT_QUE1,
+		    I.INT_QUE2,
+		    I.INT_QUE3,
+		    I.INT_DATE,
+		    I.INT_UDATE,
+		    I.INT_FEED,
+		    C.CER_NO,
+		    C.CERT_NM,
+		    C.CERT_DATE,
+		    C.ATCH_FILE_ID,
+		    A.FILE_SN,
+		    A.FILE_STRE_COURS,
+		    A.ORIGNL_FILE_NM,
+		    CO.COCO_STTS
+		FROM 
+		    INTRODUCE I
+		INNER JOIN 
+		    PERSON P ON I.STU_ID = P.ID
+		INNER JOIN 
+		    STUDENT S ON S.STU_ID = P.ID
+		INNER JOIN 
+		    COMMON_CODE CO ON CO.COCO_CD = S.GRADE_CD
+		INNER JOIN 
+		    EMPLOYMENT_FIELD E ON I.EMPFI_CD = E.EMPFI_CD
+		LEFT OUTER JOIN 
+		    CERTIFICATE C ON I.INT_CD = C.INT_CD
+		LEFT OUTER JOIN 
+		    ATCH_FILE_DETAIL A ON C.ATCH_FILE_ID = A.ATCH_FILE_ID
+		WHERE 
+		    I.INT_CD =  #{intCd, jdbcType=NUMERIC}
+		ORDER BY 
+		    C.CER_NO, A.FILE_SN
+	</select>
+	
+	
+	
+	
+	<select id="selectMyIntroduce" resultMap="IntroduceMap">
+		SELECT 
+		    I.INT_CD,
+		    I.STU_ID,
+		    P.NM,
+		    I.EMPFI_CD,
+		    E.EMPFI_NM,
+		    I.INT_QUE1,
+		    I.INT_QUE2,
+		    I.INT_QUE3,
+		    I.INT_DATE,
+		    I.INT_UDATE,
+		    I.INT_FEED,
+		    C.CER_NO,
+		    C.CERT_NM,
+		    C.CERT_DATE,
+		    C.ATCH_FILE_ID,
+		    A.FILE_SN,
+		    A.FILE_STRE_COURS,
+		    A.ORIGNL_FILE_NM,
+		    CO.COCO_STTS
+		FROM 
+		    INTRODUCE I
+		INNER JOIN 
+		    PERSON P ON I.STU_ID = P.ID
+		INNER JOIN 
+		    STUDENT S ON S.STU_ID = P.ID
+		INNER JOIN 
+		    COMMON_CODE CO ON CO.COCO_CD = S.GRADE_CD
+		INNER JOIN 
+		    EMPLOYMENT_FIELD E ON I.EMPFI_CD = E.EMPFI_CD
+		LEFT OUTER JOIN 
+		    CERTIFICATE C ON I.INT_CD = C.INT_CD
+		LEFT OUTER JOIN 
+		    ATCH_FILE_DETAIL A ON C.ATCH_FILE_ID = A.ATCH_FILE_ID
+		WHERE 
+		    I.INT_CD =  #{intCd, jdbcType=NUMERIC}
+		ORDER BY 
+		    C.CER_NO, A.FILE_SN
+
+	</select>
+	
+	
+
+	<select id="selectEditedIntroduce"  parameterType="String" resultMap="IntroduceMap">
+			SELECT 
+			    I.STU_ID,
+			    I.EMPFI_CD,
+			    I.INT_QUE1,
+			    I.INT_QUE2,
+			    I.INT_QUE3,
+			    I.INT_DATE,
+			    I.INT_UDATE,
+				I.INT_FEED,
+			    C.CERT_NM,
+			    C.CERT_DATE,
+			    C.ATCH_FILE_ID,
+			    P.NM,
+			    CO.COCO_STTS,
+			    E.EMPFI_NM
+			    
+			FROM INTRODUCE I
+			INNER JOIN CERTIFICATE C ON I.INT_CD = C.INT_CD
+			INNER JOIN PERSON P ON I.STU_ID = P.ID
+			INNER JOIN STUDENT S ON S.STU_ID = P.ID
+			INNER JOIN COMMON_CODE CO ON CO.COCO_CD=S.GRADE_CD
+			INNER JOIN EMPLOYMENT_FIELD E ON I.EMPFI_CD=E.EMPFI_CD
+			WHERE I.STU_ID = #{stuId, jdbcType=VARCHAR}
+	</select>
+	
+<!-- 	교직원 자소서 첨삭 -->
+	<update id="updateintroduce">
+		UPDATE INTRODUCE
+			SET 
+			     INT_UDATE = SYSDATE
+			    ,INT_FEED = #{intFeed, jdbcType=VARCHAR}
+			WHERE INT_CD = #{intCd, jdbcType=NUMERIC}
+	</update> 
+</mapper>

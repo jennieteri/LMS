@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.3.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-4.3.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.3.xsd">
+
+<bean class="kr.or.ddit.yguniv.projectchatmessage.WebSocketConfig"></bean>
+<!-- 하위 서블렛 설정파일 -->
+	<context:component-scan base-package="kr.or.ddit.yguniv" use-default-filters="false">
+		<context:include-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+		<context:include-filter type="annotation" expression="org.springframework.web.bind.annotation.ControllerAdvice"/>
+	</context:component-scan>
+	
+	<context:component-scan base-package="kr.or.ddit.yguniv.batch"/>
+	<task:scheduler id="jobScheduler" pool-size="10"/>	
+	<task:annotation-driven scheduler="jobScheduler"/>
+	
+<!-- 	was가 가진 defaultServlet으로 처리하던 정적 자원에 대한 요청을 -->
+<!-- 	대신 처리할 simple handler mapping등록 -->
+<!-- 	스프링에서는 file, folder다 resource 폴더는 뒤에 /붙여줘야함! -->
+	<mvc:resources location="/resources/" mapping="/resources/**" cache-period="0"/>
+	
+<!-- 	 만약에 url을 노출하지않고 임의의 url을 만들어서 보낼때 같은 전략의 자원을 2개이상 등록하여 order를 주고 우선순위를 준다 --> 
+<!-- 	 <mvc:resources location="#{dirInfo.prodImages}" mapping="/uploads/**" cache-period="0" order="1"/> -->
+
+<!-- 	HandlerMapping, HandlerAdapter, Validator를 자동 등록함. -->
+<!-- 	다 등록 backend, frontcontroller -->
+	<mvc:annotation-driven >
+		<mvc:argument-resolvers>
+			<bean class="org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver"></bean>
+		</mvc:argument-resolvers>
+		<mvc:message-converters>
+			<bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+				<constructor-arg name="objectMapper" ref="objectMapper"/>
+			</bean>
+		</mvc:message-converters>
+	</mvc:annotation-driven> 
+	
+	
+<!-- 	JSON 변환시 사용할 objectMapper설정 -->
+	<bean class="org.springframework.http.converter.json.Jackson2ObjectMapperFactoryBean" id="objectMapper">
+		<property name="featuresToDisable">
+			<array>
+				<util:constant static-field="com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS"/>
+			</array>
+		</property>
+	</bean>
+	
+	<bean class="org.springframework.web.servlet.view.json.MappingJackson2JsonView" id="jsonView">
+		<property name="objectMapper" ref="objectMapper"></property>
+	</bean>
+
+	<mvc:tiles-configurer>
+<!-- 		xml파일 위치 지정 -->
+<!-- 1. xml, 2. 타일즈 뷰 리졸버,  -->
+		<mvc:definitions location="/WEB-INF/tiles/*.xml"/>
+		
+	</mvc:tiles-configurer>
+	<mvc:view-resolvers> 
+<!-- 	accept request header를 기준으로 response content를 협상하는 전력 -->
+<!-- 		첫번째로!!!! json으로 받는 얘 json이나 html아니면 그냥 넘어감 -->
+		<mvc:content-negotiation>
+<!-- 		협상하려고 acept랑 heade봐 json으로 받아야하니까 json바꿔즈는 애를 injection -->
+			<mvc:default-views>
+<!-- 			마샬링 해주는 전략 -->
+				<ref bean="jsonView"/>
+			</mvc:default-views>
+		</mvc:content-negotiation>
+<!-- 		lvn == bean id -->
+		<mvc:bean-name/>
+<!-- 		lvn==definition name -->
+		<mvc:tiles/>
+<!-- 		lvn== prefix+lvn+suffix경로에 해당하는 싱글 jsp로 응답 전송 -->
+<!-- /없으면 tiles -->
+		<mvc:jsp prefix="/WEB-INF/views" suffix=".jsp"/>
+	</mvc:view-resolvers>
+	
+	<bean class="org.springframework.web.servlet.i18n.LocaleChangeInterceptor" id="localeChangeInterceptor">
+		<property name="paramName" value="lang" />
+	</bean>
+	
+	<bean class="kr.or.ddit.yguniv.bucket.BucketInterceptor" id="bucketInterceptor">
+		<constructor-arg ref="bucket" name="bucket"></constructor-arg>
+	</bean>
+	
+	<bean class="org.springframework.web.servlet.i18n.CookieLocaleResolver" id="localeResolver"></bean>
+
+	<bean class="kr.or.ddit.yguniv.interceptor.ControllerInterceptor" id="controllerInterceptor">
+	
+		<constructor-arg ref="logServiceImpl" name="service"></constructor-arg>
+	</bean>
+	
+	<mvc:interceptors>
+		<mvc:interceptor>
+<!-- 			<mvc:mapping path="/lectureCart/**"/> -->
+<!-- path의 단위는 url를 기준으로 함. ↑는 lectureCart로 시작하는 모든 경로 ↓는 /lectureCart/pre 에 대한 요청만  -->
+			<mvc:mapping path="/lectureCart/pre"/>
+			<ref bean="bucketInterceptor"/>
+		</mvc:interceptor>
+	
+		<mvc:interceptor>
+			<mvc:mapping path="/**"/>
+			<mvc:exclude-mapping path="/resources/**"/>
+			<ref bean="localeChangeInterceptor"/>
+		</mvc:interceptor>
+
+<!-- 		<mvc:interceptor> -->
+<!-- 		    <mvc:mapping path="/**" /> -->
+<!-- 		    <mvc:exclude-mapping path="/mainui/**"/> -->
+<!-- 		    <mvc:exclude-mapping path="/lecture/**"/> -->
+<!-- 		    <mvc:exclude-mapping path="/logout"/> -->
+<!-- 		    <ref bean="controllerInterceptor"/> -->
+<!-- 		</mvc:interceptor> -->
+<!--  -->
+	
+	</mvc:interceptors>
+</beans>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
