@@ -30,7 +30,8 @@
 <div align="left">
     <h2>💻 Service UI </h2>
     🍓 메인페이지
-   <a href="image(3).png">다운로드</a>
+   <img src="image.png" width="500px" alt="My Image">
+
 
      <br>
     🍊 대표적인 기능 1 :  로그인/ 아이디 찾기
