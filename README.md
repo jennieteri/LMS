@@ -1,5 +1,7 @@
-
-
+<div align="center">
+  <img src="https://i.gifer.com/4CSm.gif" />
+</div>
+<br><br>
 <!-- 인사말 추가 -->
 <div align="center">
     <h2>✨About Me</h2>
@@ -9,10 +11,8 @@
 😊Shin-Yujung | 1997.03.11 <br>
 🌳Full Stack Developer
 </div>
-<br><br>
-<div align="center">
-  <img src="https://i.gifer.com/4CSm.gif" />
-</div>
+
+
 
 
 <!-- Tech Stack 섹션 -->
