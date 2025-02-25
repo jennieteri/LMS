@@ -1,8 +1,8 @@
 <!-- GIF 올바른 링크로 교체 -->
 <div align="center">
   <video width="400" height="auto" controls autoplay loop muted>
-    <source src="https://i.namu.wiki/i/2fVTUCkha-e_fasVP9ZcGsPfu-um3wGL2jKaL9qiGU6NPVbLcEonw2zKQDoQJ2dtjMpELZ9S1QozxhLuZ4E8ow.mp4" type="video/mp4">
-    Your browser does not support the video tag.
+    <source src="https://i.gifer.com/4CSm.mp4" type="video/mp4">
+  
   </video>
 </div>
 
