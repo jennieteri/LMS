@@ -35,7 +35,7 @@
 <!-- 화면 UI -->
 <div align="left">
     <h2> 💡 ERD Design </h2>
-   <a href="![image (3)](https://github.com/user-attachments/assets/6cca9670-c058-4c2f-b7e6-aa641145b0de)
-">다운로드</a>
+   <a href="https://github.com/user-attachments/assets/6cca9670-c058-4c2f-b7e6-aa641145b0de
+"></a>
 </div>
   
