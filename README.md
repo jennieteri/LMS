@@ -26,27 +26,25 @@
           <br/><img src="https://img.shields.io/badge/Spring Boot-6DB33F?style=for-the-badge&logo=Spring Boot&logoColor=white">
           </div>
     </div>
-<!-- 화면 UI -->
-
 <div align="left">
     <h2>💻 Service UI </h2>
-    🍓 메인페이지 <br>
-    🍊 모듈 UI, 드래그 & 드롭. 
-    <br>
-  <div>   
-    <img src="https://raw.githubusercontent.com/jennieteri/LMS/main/image%20(4).png" width="500px" alt="ERD Design">
-</div>
-</div>
+    <p>🍓 메인페이지</p>
+    <p>🍊 모듈 UI, 드래그 & 드롭</p>
 
+    <div>
+        <img src="https://raw.githubusercontent.com/jennieteri/LMS/main/image%20(4).png" 
+             width="500px" alt="ERD Design" style="display: block; margin-bottom: 10px;">
+    </div>
 
+    <p>🍓 메인페이지</p>
+    <p>🍊 모듈 UI, 드래그 & 드롭</p>
+</div>
 
 <div align="left">
     <h2> 💡 ERD Design </h2>
     <img src="https://github.com/user-attachments/assets/4a71f0a6-f1bd-4060-b772-07ac47bdc667" 
-         width="500px" alt="ERD Design">
+         width="500px" alt="ERD Design" style="display: block; margin-bottom: 10px;">
     <br>
-    🍓 총 75개의 테이블 
+    <p>🍓 총 75개의 테이블</p>
 </div>
 
-
-  
