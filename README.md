@@ -5,7 +5,7 @@
 
 <!-- 인사말 -->
 <div align="center">
-    <h3>Hi there 👋</h3>
+  <img src="https://dribbble.com/shots/6221645-Welcome-gif/attachments/6221645-Welcome-gif?mode=media" />
 </div>
 
 <!-- Tech Stack 섹션 -->
