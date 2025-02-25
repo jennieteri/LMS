@@ -1,6 +1,6 @@
 <!-- GIF 올바른 링크로 교체 -->
 <div align="center">
-  <img src="https://cdn.dribbble.com/users/2322685/screenshots/6221645/welcome-dribbble.gif" 
+  <img src="https://i.namu.wiki/i/2fVTUCkha-e_fasVP9ZcGsPfu-um3wGL2jKaL9qiGU6NPVbLcEonw2zKQDoQJ2dtjMpELZ9S1QozxhLuZ4E8ow.mp4" 
        alt="Welcome GIF" width="400px" height="auto">
 </div>
 
