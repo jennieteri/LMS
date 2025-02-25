@@ -32,12 +32,10 @@
     
 </div>
 
-
- <div align="left">
+<div align="left">
     <h2> 💡 ERD Design </h2>
- 
-        <img src="https://github.com/user-attachments/assets/6cca9670-c058-4c2f-b7e6-aa641145b0de" width="500px" alt="ERD Design">
-    
+    <img src="https://github.com/user-attachments/assets/4a71f0a6-f1bd-4060-b772-07ac47bdc667" 
+         width="500px" alt="ERD Design">
 </div>
 
 
