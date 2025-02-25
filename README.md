@@ -30,7 +30,9 @@
 <div align="left">
     <h2>💻 Service UI </h2>
     🍓 메인페이지
-<img src="image (4).png" width="800px" alt="Dashboard Image">
+
+  <img src="https://github.com/user-attachments/assets/4a71f0a6-f1bd-4060-b772-07ac47bdc667" 
+         width="500px" alt="ERD Design">
 
 
 
