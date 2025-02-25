@@ -1,10 +1,8 @@
-<!-- GIF 올바른 링크로 교체 -->
+![4CSm](https://github.com/user-attachments/assets/df5be34d-36d4-4e6f-a8e1-1423f82a7a56)<!-- GIF 올바른 링크로 교체 -->
 <div align="center">
-  <video width="400" height="auto" controls autoplay loop muted>
-    <source src="https://i.gifer.com/4CSm.mp4" type="video/mp4">
-  
-  </video>
+  <img src="https://i.gifer.com/4CSm.gif" />
 </div>
+
 
 <!-- Tech Stack 섹션 -->
 <div align="center">
