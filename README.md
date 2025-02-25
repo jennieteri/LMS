@@ -35,9 +35,9 @@
 
  <div align="left">
     <h2> 💡 ERD Design </h2>
-    <a href="https://github.com/user-attachments/assets/6cca9670-c058-4c2f-b7e6-aa641145b0de" target="_blank">
+ 
         <img src="https://github.com/user-attachments/assets/6cca9670-c058-4c2f-b7e6-aa641145b0de" width="500px" alt="ERD Design">
-    </a>
+    
 </div>
 
 
