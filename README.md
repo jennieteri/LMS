@@ -35,7 +35,27 @@
 🍓 학생 사용자 메인페이지 입니다.   
 🍊 우측 하단의 모듈 UI를 통해 원하는 모듈을 Drag & Drop 으로 꾸밀 수 있습니다.
 </div>
+<div align="left">
+   
+## 💻 Service UI
 
+![메인페이지](https://raw.githubusercontent.com/jennieteri/LMS/main/image%20(4).png)
+
+🍓 대표적인 기능 : 로그인 및 아이디 찾기 화면 입니다.   
+</div>
+
+<div align="left">
+   
+## 💻 Service UI
+
+![메인페이지](https://raw.githubusercontent.com/jennieteri/LMS/main/image%20(4).png)
+
+🍓 대표적인 기능: 학생 사용자 마이페이지 입니다.   
+
+</div>
+
+🍑 그 외 기능 : 공지사항 게시판, 개인 정보 수정, Q&A 게시판, 장학금 게시판 
+<br>
 <div align="left">
     <h2> 💡 ERD Design </h2>
     <img src="https://github.com/user-attachments/assets/4a71f0a6-f1bd-4060-b772-07ac47bdc667" 
