@@ -2,7 +2,7 @@
     <img src="https://capsule-render.vercel.app/api?type=wave&color=auto&height=180&text=Final%20Project&animation=&fontColor=817979&fontSize=60" />
     </div>
     <div style="text-align: left;"> 
-    <h2 style="border-bottom: 1px solid #d8dee4; color: #282d33;"> 🏫학사정보관리시스템(LMS)🏫 </h2>  
+    <h2 style="border-bottom: 1px solid #d8dee4; color: #282d33;"> 🏫학사정보관리시스템(LMS) </h2>  
     <div style="font-weight: 700; font-size: 15px; text-align: left; color: #282d33;">  
         🍓기존 교직원의 행정업무에 치중되어 있던 시스템에서 부족했던 부분을 개선하여, 학사 관리 측면에서 사용자 중심의 편리함과 교육환경의 질을 향상시키는 것을 목적으로 했습니다.
         <br>
@@ -27,7 +27,15 @@
           </div>
     </div>
 <!-- 화면 UI -->
-<div align="center">
-    <h2>💻 Service UI💻 </h2>
+<div align="left">
+    <h2>💻 Service UI </h2>
+    
+</div>
+
+<!-- 화면 UI -->
+<div align="left">
+    <h2> 💡 ERD Design </h2>
+   <a href="![image (3)](https://github.com/user-attachments/assets/6cca9670-c058-4c2f-b7e6-aa641145b0de)
+">다운로드</a>
 </div>
   
