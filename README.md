@@ -48,8 +48,7 @@
    
 ## 💻 Service UI
 
-![메인페이지](https://raw.githubusercontent.com/jennieteri/LMS/main/image%20(4).png)
-
+![마이페이지](https://raw.githubusercontent.com/jennieteri/LMS/main/image%20(2).png)
 🍓 대표적인 기능: 학생 사용자 마이페이지 입니다.   
 
 </div>
