@@ -40,10 +40,12 @@
 
 <div align="left">
     <h2> 💡 ERD Design </h2>
+    
+    🍓 총 75개의 테이블 
+    <br>
     <img src="https://github.com/user-attachments/assets/4a71f0a6-f1bd-4060-b772-07ac47bdc667" 
          width="500px" alt="ERD Design">
-    <br>
-    🍓 총 75개의 테이블 
+    
 </div>
 
 
