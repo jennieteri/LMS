@@ -27,13 +27,14 @@
           </div>
     </div>
 <!-- 화면 UI -->
- <div>
-    <img src="https://raw.githubusercontent.com/jennieteri/LMS/main/image%20(4).png" width="500px" alt="ERD Design">
-</div>
 
 <div align="left">
     <h2>💻 Service UI </h2>
     🍓 메인페이지
+     <div>
+    <img src="https://raw.githubusercontent.com/jennieteri/LMS/main/image%20(4).png" width="500px" alt="ERD Design">
+</div>
+
     <br>
     🍊 대표적인 기능 1 : 로그인 / 아이디 찾기  
     <br> 
