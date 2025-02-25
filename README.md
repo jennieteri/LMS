@@ -1,6 +1,6 @@
 <!-- GIF 올바른 링크로 교체 -->
 <div align="center">
-  <img src="https://i.namu.wiki/i/2fVTUCkha-e_fasVP9ZcGsPfu-um3wGL2jKaL9qiGU6NPVbLcEonw2zKQDoQJ2dtjMpELZ9S1QozxhLuZ4E8ow.mp4" 
+  <img src="https://file3.instiz.net/data/file3/2019/08/03/6/6/5/6650718373b3ba3c4332f795e7c9d875.gif" 
        alt="Welcome GIF" width="400px" height="auto">
 </div>
 
