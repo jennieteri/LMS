@@ -31,7 +31,7 @@
     <h2>💻 Service UI </h2>
     🍓 메인페이지
 
-  <img src="https://github.com/user-attachments/assets/4a71f0a6-f1bd-4060-b772-07ac47bdc667" 
+  <img src="[https://github.com/user-attachments/assets/4a71f0a6-f1bd-4060-b772-07ac47bdc667](https://github.com/jennieteri/LMS/blob/main/image%20(4).png?raw=true)" 
          width="500px" alt="ERD Design">
 
 
