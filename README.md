@@ -13,7 +13,7 @@
 </div>
 
 
-
+<br>
 
 <!-- Tech Stack 섹션 -->
 <div align="center">
@@ -36,7 +36,7 @@
           <br/><img src="https://img.shields.io/badge/Vue.js-4FC08D?style=for-the-badge&logo=Vue.js&logoColor=white">
           </div>
     </div>
-
+<br>
 <!-- Contact 정보 -->
 <div align="center">
     <h2>💜 To Me 💜</h2>
