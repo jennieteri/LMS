@@ -32,8 +32,8 @@
 
 ![메인페이지](https://raw.githubusercontent.com/jennieteri/LMS/main/image%20(4).png)
 
-🍓 메인페이지  
-🍊 모듈 UI, 드래그 & 드롭
+🍓 학생 사용자 메인페이지 입니다.   
+🍊 우측 하단의 모듈 UI를 통해 원하는 모듈을 Drag & Drop 으로 꾸밀 수 있습니다.
 </div>
 
 <div align="left">
