@@ -30,7 +30,8 @@
 
 <div align="left">
     <h2>💻 Service UI </h2>
-    🍓 메인페이지
+    🍓 메인페이지 
+    🍊 우측 하단의 모듈  UI를 통해 원하는 모듈을 드래그 & 드롭으로 꾸밀 수 있습니다. 
     <br>
   <div>   
     <img src="https://raw.githubusercontent.com/jennieteri/LMS/main/image%20(4).png" width="500px" alt="ERD Design">
