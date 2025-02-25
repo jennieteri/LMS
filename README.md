@@ -25,14 +25,13 @@
           <img src="https://img.shields.io/badge/Spring-6DB33F?style=for-the-badge&logo=Spring&logoColor=white">
           <br/><img src="https://img.shields.io/badge/Spring Boot-6DB33F?style=for-the-badge&logo=Spring Boot&logoColor=white">
           </div>
-    <div>
-        Service UI
-        <br>
-        <img src="https://img.shields.io/badge/Spring Boot-6DB33F?style=for-the-badge&logo=Spring Boot&logoColor=white">
-    </div>
-    
-    
     </div>
    
-        
+        <br>
+<!-- 화면 UI -->
+<div align="center">
+    <h2>💻 Service UI💻 </h2>
+  
+     
+</div>
   
