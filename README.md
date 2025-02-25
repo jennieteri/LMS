@@ -3,10 +3,11 @@
     <img src="https://capsule-render.vercel.app/api?type=waving&color=auto&height=180&text=Yujung%20Shin&animation=&fontColor=ffffff&fontSize=50" />
 </p>
 
-<!-- 인사말 -->
+<!-- GIF 올바른 링크로 교체 -->
 <div align="center">
-  <img src="https://dribbble.com/shots/6221645-Welcome-gif/attachments/6221645-Welcome-gif?mode=media" />
+  <img src="https://media.giphy.com/media/ASd0Ukj0y3qMM/giphy.gif" alt="Welcome GIF">
 </div>
+
 
 <!-- Tech Stack 섹션 -->
 <div align="center">
