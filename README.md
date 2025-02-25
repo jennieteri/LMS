@@ -35,12 +35,6 @@
     <img src="https://raw.githubusercontent.com/jennieteri/LMS/main/image%20(4).png" width="500px" alt="ERD Design">
 </div>
 
-    <br>
-    🍊 대표적인 기능 1 : 로그인 / 아이디 찾기  
-    <br> 
-    🍇 대표적인 기능 2 : 마이페이지 관리  
-    <br> 
-    🍒 대표적인 기능 3 : 학생증 관리  
 </div>
 
 
