@@ -1,4 +1,10 @@
 
+
+<!-- 인사말 추가 -->
+<div align="center">
+    <h1>Hello, I'm Yujung 👋</h1>
+</div>
+
 <div align="center">
   <img src="https://i.gifer.com/4CSm.gif" />
 </div>
