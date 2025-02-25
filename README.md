@@ -9,6 +9,7 @@
 😊Shin-Yujung | 1997.03.11 <br>
 🌳Full Stack Developer
 </div>
+<br><br>
 <div align="center">
   <img src="https://i.gifer.com/4CSm.gif" />
 </div>
