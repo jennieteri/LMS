@@ -31,10 +31,14 @@
     <p>🍓 메인페이지</p>
     <p>🍊 모듈 UI, 드래그 & 드롭</p>
 
-    <div>
-        <img src="https://raw.githubusercontent.com/jennieteri/LMS/main/image%20(4).png" 
-             width="500px" alt="ERD Design" style="display: block; margin-bottom: 10px;">
-    </div>
+  ## 💻 Service UI
+
+![메인페이지](https://raw.githubusercontent.com/jennieteri/LMS/main/image%20(4).png)
+
+🍓 메인페이지  
+🍊 모듈 UI, 드래그 & 드롭
+
+
 
     <p>🍓 메인페이지</p>
     <p>🍊 모듈 UI, 드래그 & 드롭</p>
