@@ -30,7 +30,8 @@
 <div align="left">
     <h2>💻 Service UI </h2>
     🍓 메인페이지
-<img src="https://raw.githubusercontent.com/your-username/repository/main/image.png" width="500px" alt="My Image">
+<img src="image (4).png" width="800px" alt="Dashboard Image">
+
 
 
 
