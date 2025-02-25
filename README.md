@@ -5,7 +5,7 @@
 
 <!-- GIF 올바른 링크로 교체 -->
 <div align="center">
-  <img src="https://media.giphy.com/media/ASd0Ukj0y3qMM/giphy.gif" alt="Welcome GIF">
+  <img src="https://cdn.dribbble.com/users/2322685/screenshots/6221645/welcome-dribbble.gif" alt="Welcome GIF">
 </div>
 
 
