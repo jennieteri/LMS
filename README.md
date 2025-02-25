@@ -1,4 +1,4 @@
-![4CSm](https://github.com/user-attachments/assets/df5be34d-36d4-4e6f-a8e1-1423f82a7a56)<!-- GIF 올바른 링크로 교체 -->
+
 <div align="center">
   <img src="https://i.gifer.com/4CSm.gif" />
 </div>
