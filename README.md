@@ -30,7 +30,8 @@
 <div align="left">
     <h2>💻 Service UI </h2>
     🍓 메인페이지
-   <img src="image.png" width="500px" alt="My Image">
+   <img src="image (4).png" width="500px" alt="My Image">
+
 
 
      <br>
