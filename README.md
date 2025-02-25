@@ -1,10 +1,13 @@
 
 
 <!-- 인사말 추가 -->
-<div align="center" text-size: small>
-    <h1>Hello, I'm Yujung 👋</h1>
+<div align="center">
+    <h2>✨About Me</h2>
 </div>
 <br>
+😊Shin-Yujung | 1997.03.11
+🌳Full Stack Developer
+
 <div align="center">
   <img src="https://i.gifer.com/4CSm.gif" />
 </div>
@@ -12,7 +15,7 @@
 
 <!-- Tech Stack 섹션 -->
 <div align="center">
-    <h2>🛠️ Tech Stack</h2>
+    <h2>🛠️ Tech Stacks</h2>
     <div style="margin: 0 auto; text-align: center;" align= "center"> <img src="https://img.shields.io/badge/Apache Tomcat-F8DC75?style=for-the-badge&logo=Apache Tomcat&logoColor=white">
           <img src="https://img.shields.io/badge/Bootstrap-7952B3?style=for-the-badge&logo=Bootstrap&logoColor=white">
           <img src="https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=CSS3&logoColor=white">
