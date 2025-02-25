@@ -39,7 +39,8 @@
    
 ## 💻 Service UI
 
-![메인페이지](https://raw.githubusercontent.com/jennieteri/LMS/main/image%20(4).png)
+![로그인](https://raw.githubusercontent.com/jennieteri/LMS/main/%EC%B5%9C%EC%A2%85%EB%A1%9C%EA%B7%B8%EC%9D%B8.png)
+
 
 🍓 대표적인 기능 : 로그인 및 아이디 찾기 화면 입니다.   
 </div>
