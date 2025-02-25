@@ -1,8 +1,3 @@
-<!-- 배경 추가 -->
-<p align="center">
-    <img src="https://capsule-render.vercel.app/api?type=waving&color=auto&height=180&text=Yujung%20Shin&animation=&fontColor=ffffff&fontSize=50" />
-</p>
-
 <!-- GIF 올바른 링크로 교체 -->
 <div align="center">
   <img src="https://cdn.dribbble.com/users/2322685/screenshots/6221645/welcome-dribbble.gif" 
