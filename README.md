@@ -27,28 +27,27 @@
           </div>
     </div>
 <!-- 화면 UI -->
-<div align="left">
+
     <h2>💻 Service UI </h2>
     🍓 메인페이지
-    <br>
-    <img src="https://raw.githubusercontent.com/jennieteri/LMS/main/image_4.png" 
-         width="500px" alt="Main Page UI">
-    <br>
-    🍊 대표적인 기능 1 : 로그인 / 아이디 찾기  
+
+ <img src="https://raw.githubusercontent.com/jennieteri/LMS/main/image%20(4).png" 
+     width="500px" alt="ERD Design">
+<div align="left">
+    🍊 대표적인 기능 1 :  로그인/ 아이디 찾기
     <br> 
-    🍇 대표적인 기능 2 : 마이페이지 관리  
-    <br> 
-    🍒 대표적인 기능 3 : 학생증 관리  
+    🍇 대표적인 기능 2 : 마이페이지 관리 
+     <br> 
+    🍒 대표적인 기능 3 : 학생증 관리 
 </div>
 
 <div align="left">
     <h2> 💡 ERD Design </h2>
-    <img src="https://raw.githubusercontent.com/jennieteri/LMS/main/ERD.png" 
+    <img src="https://github.com/user-attachments/assets/4a71f0a6-f1bd-4060-b772-07ac47bdc667" 
          width="500px" alt="ERD Design">
     <br>
     🍓 총 75개의 테이블 
 </div>
-
 
 
   
