@@ -32,10 +32,11 @@
     
 </div>
 
-<!-- 화면 UI -->
 <div align="left">
     <h2> 💡 ERD Design </h2>
-   <a href="https://github.com/user-attachments/assets/6cca9670-c058-4c2f-b7e6-aa641145b0de
-"></a>
+    <a href="https://github.com/user-attachments/assets/6cca9670-c058-4c2f-b7e6-aa641145b0de" target="_blank">
+        Click here to view the ERD
+    </a>
 </div>
+
   
