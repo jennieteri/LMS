@@ -7,7 +7,7 @@
     <h2>✨About Me</h2>
 </div>
 <div align="center">
-<br>
+
 😊Shin-Yujung | 1997.03.11 <br>
 🌳Full Stack Developer
 </div>
