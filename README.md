@@ -36,8 +36,7 @@
 🍊 우측 하단의 모듈 UI를 통해 원하는 모듈을 Drag & Drop 으로 꾸밀 수 있습니다.
 </div>
 <div align="left">
-   
-## 💻 Service UI
+
 
 ![로그인](https://raw.githubusercontent.com/jennieteri/LMS/main/%EC%B5%9C%EC%A2%85%EB%A1%9C%EA%B7%B8%EC%9D%B8.png)
 
@@ -46,8 +45,7 @@
 </div>
 
 <div align="left">
-   
-## 💻 Service UI
+
 
 ![마이페이지](https://raw.githubusercontent.com/jennieteri/LMS/main/image%20(2).png)
 🍓 대표적인 기능: 학생 사용자 마이페이지 입니다.   
